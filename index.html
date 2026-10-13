@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Apex CRM - Gestão de Reputação & Google Meu Negócio</title>
 
     <!-- Google Fonts: Inter & Outfit -->
@@ -24,6 +24,28 @@
 
     <!-- Tailwind CSS CDN with Custom Configuration -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Interceptor preventivo global para garantir resposta imediata no login
+        window.handleLoginSubmit = function(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            if (typeof window._handleLoginSubmitModular === 'function') {
+                return window._handleLoginSubmitModular(event);
+            }
+            console.warn("Aguardando carregamento da conexão Firebase...");
+        };
+        window.togglePasswordVisibility = function() {
+            if (typeof window._togglePasswordVisibilityModular === 'function') {
+                return window._togglePasswordVisibilityModular();
+            }
+            const passInput = document.getElementById('login-password');
+            if (passInput) {
+                passInput.type = (passInput.type === 'password') ? 'text' : 'password';
+            }
+        };
+    </script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -302,38 +324,158 @@
         .radar-blip-pulse {
             animation: radarPulse 2s cubic-bezier(0.1, 0.7, 0.3, 1) infinite;
         }
+
+        /* Animação Shake para erro de login */
+        @keyframes loginShake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .animate-shake {
+            animation: loginShake 0.4s ease-in-out;
+        }
+
+        /* Otimizações Touch & Mobile Responsivo */
+        @media (max-width: 768px) {
+            button, input, select, textarea, .nav-item {
+                min-height: 44px;
+            }
+        }
     </style>
 </head>
 
 <body
     class="bg-slateCustom-900 text-slate-100 font-sans antialiased min-h-screen flex selection:bg-googleBlue selection:text-white overflow-x-hidden">
 
-    <!-- BACKGROUND GLOW EFFECTS -->
-    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div class="absolute -top-40 -left-40 w-96 h-96 bg-googleBlue/15 rounded-full blur-3xl"></div>
-        <div class="absolute top-1/3 -right-40 w-[30rem] h-[30rem] bg-emeraldAccent/10 rounded-full blur-[140px]"></div>
-        <div class="absolute bottom-10 left-1/3 w-80 h-80 bg-indigo-500/10 rounded-full blur-[120px]"></div>
-    </div>
+    <!-- ======================================================== -->
+    <!-- 1. TELA DE LOGIN FRONT-END (ACESSO RESTRITO)             -->
+    <!-- ======================================================== -->
+    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slateCustom-950 overflow-y-auto">
+        <!-- Ambient Glow Effects -->
+        <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+            <div class="absolute -top-32 -left-32 w-96 h-96 bg-googleBlue/20 rounded-full blur-3xl"></div>
+            <div class="absolute top-1/2 -right-32 w-96 h-96 bg-emeraldAccent/15 rounded-full blur-[140px]"></div>
+            <div class="absolute -bottom-20 left-1/4 w-80 h-80 bg-indigo-500/15 rounded-full blur-[120px]"></div>
+        </div>
 
-    <!-- FIXED SIDEBAR -->
-    <aside
-        class="fixed top-0 left-0 h-screen w-64 glass-sidebar flex flex-col justify-between z-40 transition-all duration-300">
-        <!-- Brand / Logo -->
-        <div>
-            <div class="h-20 flex items-center px-6 border-b border-white/5 gap-3">
-                <div
-                    class="w-10 h-10 rounded-xl bg-gradient-to-tr from-googleBlue to-blue-400 flex items-center justify-center shadow-glow-blue">
-                    <i class="ph-bold ph-map-pin text-white text-xl"></i>
+        <div id="login-card-box" class="relative z-10 w-full max-w-md glass-card rounded-3xl p-7 sm:p-9 border border-white/10 shadow-2xl">
+            <!-- Brand Logo & Header -->
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-googleBlue to-blue-400 flex items-center justify-center shadow-glow-blue mx-auto mb-4">
+                    <i class="ph-bold ph-map-pin text-white text-3xl"></i>
                 </div>
-                <div>
-                    <div class="flex items-center gap-1.5">
-                        <span class="font-display font-bold text-lg text-white tracking-tight">Apex Local</span>
-                        <span
-                            class="px-1.5 py-0.5 text-[10px] font-semibold bg-googleBlue/20 text-blue-400 rounded border border-googleBlue/30">PRO</span>
-                    </div>
-                    <p class="text-xs text-slate-400 font-medium">CRM de Reputação & Maps</p>
+                <div class="flex items-center justify-center gap-2">
+                    <h1 class="font-display font-extrabold text-2xl sm:text-3xl text-white tracking-tight">Apex Local</h1>
+                    <span class="px-2 py-0.5 text-xs font-bold bg-googleBlue/20 text-blue-400 rounded-lg border border-googleBlue/30">PRO</span>
+                </div>
+                <p class="text-xs sm:text-sm text-slate-400 mt-1.5 font-medium">CRM de Reputação & Google Meu Negócio</p>
+                <div class="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/80 border border-white/5 text-[11px] text-slate-300">
+                    <span class="w-2 h-2 rounded-full bg-emeraldAccent animate-pulse"></span>
+                    <span>Painel de Acesso Seguro</span>
                 </div>
             </div>
+
+            <!-- Alerta de Erro Visual -->
+            <div id="login-error-alert" class="hidden mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs sm:text-sm flex items-start gap-3 animate-fadeIn">
+                <i class="ph-bold ph-warning-circle text-xl shrink-0 mt-0.5 text-red-400"></i>
+                <div class="flex-1">
+                    <p class="font-bold text-red-300" id="login-error-title">Falha no Login</p>
+                    <p class="text-xs text-red-200/90 mt-0.5" id="login-error-msg">Usuário ou senha incorretos. Verifique suas credenciais e tente novamente.</p>
+                </div>
+            </div>
+
+            <!-- Formulário de Login -->
+            <form id="login-form" onsubmit="event.preventDefault(); handleLoginSubmit(event);" autocomplete="off" class="space-y-5">
+                <div>
+                    <label for="login-username" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">Usuário</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i class="ph-bold ph-user text-lg"></i>
+                        </span>
+                        <input type="text" id="login-username" required autocomplete="off"
+                            placeholder="Digite seu usuário"
+                            class="w-full pl-11 pr-4 py-3 rounded-xl glass-input text-sm text-white placeholder-slate-500 outline-none transition-all min-h-[46px] focus:ring-2 focus:ring-googleBlue/40">
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label for="login-password" class="block text-xs font-semibold uppercase tracking-wider text-slate-300">Senha</label>
+                    </div>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i class="ph-bold ph-lock-key text-lg"></i>
+                        </span>
+                        <input type="password" id="login-password" required autocomplete="new-password"
+                            placeholder="Digite sua senha"
+                            class="w-full pl-11 pr-11 py-3 rounded-xl glass-input text-sm text-white placeholder-slate-500 outline-none transition-all min-h-[46px] focus:ring-2 focus:ring-googleBlue/40">
+                        <button type="button" onclick="togglePasswordVisibility()"
+                            class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-white transition-colors"
+                            title="Alternar visibilidade da senha">
+                            <i id="login-pwd-eye" class="ph-bold ph-eye text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="button" onclick="handleLoginSubmit(event)" id="login-submit-btn"
+                    class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-googleBlue to-blue-600 hover:from-blue-600 hover:to-googleBlue text-white font-semibold text-sm shadow-glow-blue transition-all duration-200 flex items-center justify-center gap-2 min-h-[48px] active:scale-[0.98] cursor-pointer">
+                    <span>Entrar no CRM</span>
+                    <i class="ph-bold ph-arrow-right text-base"></i>
+                </button>
+            </form>
+
+            <div class="mt-7 pt-5 border-t border-white/5 text-center">
+                <p class="text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
+                    <i class="ph-bold ph-shield-check text-emeraldAccent"></i>
+                    <span>Acesso Administrativo Restrito • Apex CRM</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 2. CRM APP ROOT CONTAINER (OCULTO ATÉ O LOGIN BEM-SUCEDIDO) -->
+    <!-- ======================================================== -->
+    <div id="crm-app-container" style="display: none;" class="w-full min-h-screen flex flex-col md:flex-row relative">
+
+        <!-- BACKGROUND GLOW EFFECTS -->
+        <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+            <div class="absolute -top-40 -left-40 w-96 h-96 bg-googleBlue/15 rounded-full blur-3xl"></div>
+            <div class="absolute top-1/3 -right-40 w-[30rem] h-[30rem] bg-emeraldAccent/10 rounded-full blur-[140px]"></div>
+            <div class="absolute bottom-10 left-1/3 w-80 h-80 bg-indigo-500/10 rounded-full blur-[120px]"></div>
+        </div>
+
+        <!-- SIDEBAR BACKDROP (Mobile) -->
+        <div id="sidebar-backdrop" onclick="toggleMobileSidebar(false)"
+            class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 hidden transition-opacity duration-300 opacity-0 md:hidden"></div>
+
+        <!-- FIXED / SLIDING SIDEBAR -->
+        <aside id="crm-sidebar"
+            class="fixed top-0 left-0 h-screen w-64 glass-sidebar flex flex-col justify-between z-50 transition-transform duration-300 ease-in-out -translate-x-full md:translate-x-0 shadow-2xl md:shadow-none">
+            <!-- Brand / Logo -->
+            <div>
+                <div class="h-20 flex items-center justify-between px-6 border-b border-white/5">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-xl bg-gradient-to-tr from-googleBlue to-blue-400 flex items-center justify-center shadow-glow-blue shrink-0">
+                            <i class="ph-bold ph-map-pin text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-display font-bold text-lg text-white tracking-tight">Apex Local</span>
+                                <span
+                                    class="px-1.5 py-0.5 text-[10px] font-semibold bg-googleBlue/20 text-blue-400 rounded border border-googleBlue/30">PRO</span>
+                            </div>
+                            <p class="text-xs text-slate-400 font-medium">CRM de Reputação & Maps</p>
+                        </div>
+                    </div>
+                    <!-- Botão Fechar Sidebar no Mobile -->
+                    <button type="button" onclick="toggleMobileSidebar(false)"
+                        class="md:hidden p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center shrink-0"
+                        aria-label="Fechar Menu Lateral">
+                        <i class="ph-bold ph-x text-xl"></i>
+                    </button>
+                </div>
 
             <!-- Navigation Links -->
             <nav class="p-4 space-y-1.5" id="sidebar-nav">
@@ -370,6 +512,14 @@
                     class="nav-item w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
                     <i class="ph-bold ph-wallet text-lg"></i>
                     <span>Controle Financeiro</span>
+                </button>
+
+                <!-- View 5: Gestão de Usuários (Apenas role: dono) -->
+                <button onclick="switchView('users')" id="nav-users"
+                    class="nav-item w-full hidden items-center gap-3.5 px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
+                    <i class="ph-bold ph-user-gear text-lg text-purple-400"></i>
+                    <span class="flex-1 text-left">Gestão de Usuários</span>
+                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-semibold uppercase tracking-wider">Dono</span>
                 </button>
             </nav>
 
@@ -422,6 +572,13 @@
                     <span>Configurações da Agência</span>
                 </button>
 
+                <!-- Gestão de Usuários (Apenas role: dono) no Dropup -->
+                <button type="button" id="dropup-users-btn" onclick="toggleUserDropup(event); switchView('users');"
+                    class="w-full hidden items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-purple-300 hover:text-white hover:bg-purple-600/20 transition-all group">
+                    <i class="ph-bold ph-user-gear text-sm text-purple-400 group-hover:scale-110 transition-transform"></i>
+                    <span>Gestão de Usuários (Dono)</span>
+                </button>
+
                 <!-- Divisor Horizontal -->
                 <div class="my-1 border-t border-slate-700/80"></div>
 
@@ -459,24 +616,32 @@
         </div>
     </aside>
 
-    <!-- MAIN WRAPPER (Offset for Sidebar) -->
-    <div class="ml-64 flex-1 flex flex-col min-h-screen relative z-10">
+    <!-- MAIN WRAPPER (100% no Mobile, Offset no Desktop) -->
+    <div class="ml-0 md:ml-64 flex-1 flex flex-col min-h-screen relative z-10 w-full min-w-0">
 
         <!-- TOP HEADER NAVBAR -->
-        <header class="h-20 glass-header sticky top-0 z-30 px-8 flex items-center justify-between">
-            <div>
-                <div class="flex items-center gap-2 text-xs text-slate-400">
-                    <span id="header-breadcrumb-root">CRM</span>
-                    <i class="ph-bold ph-caret-right text-[10px]"></i>
-                    <span id="header-breadcrumb-active" class="text-slate-200 font-medium">Dashboard Geral</span>
+        <header class="h-20 glass-header sticky top-0 z-30 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+                <!-- Hamburger Menu Button (Mobile) -->
+                <button id="mobile-hamburger-btn" type="button" onclick="toggleMobileSidebar(true)"
+                    class="md:hidden p-2.5 rounded-xl glass-input text-white hover:bg-slate-800 transition-colors flex items-center justify-center min-h-[44px] min-w-[44px] shrink-0"
+                    aria-label="Abrir Menu Lateral">
+                    <i class="ph-bold ph-list text-2xl text-white"></i>
+                </button>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                        <span id="header-breadcrumb-root">CRM</span>
+                        <i class="ph-bold ph-caret-right text-[10px]"></i>
+                        <span id="header-breadcrumb-active" class="text-slate-200 font-medium truncate">Dashboard Geral</span>
+                    </div>
+                    <h1 id="header-title" class="font-display font-bold text-lg sm:text-xl text-white tracking-tight mt-0.5 truncate">
+                        Visão Geral & Performance
+                    </h1>
                 </div>
-                <h1 id="header-title" class="font-display font-bold text-xl text-white tracking-tight mt-0.5">
-                    Visão Geral & Performance
-                </h1>
             </div>
 
             <!-- Header Actions -->
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2.5 sm:gap-4 shrink-0">
                 <!-- Date display -->
                 <div
                     class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl glass-input text-xs text-slate-300">
@@ -486,7 +651,7 @@
 
                 <!-- Global search shortcut indicator -->
                 <button onclick="focusClientSearch()"
-                    class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl glass-input text-xs text-slate-400 hover:text-slate-200 transition-colors">
+                    class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl glass-input text-xs text-slate-400 hover:text-slate-200 transition-colors min-h-[40px]">
                     <i class="ph-bold ph-magnifying-glass text-slate-400"></i>
                     <span>Buscar cliente...</span>
                     <kbd
@@ -496,7 +661,7 @@
 
                 <!-- Quick "Novo Cliente" Modal Trigger -->
                 <button onclick="openNewClientModal()"
-                    class="flex items-center gap-2 px-4 py-2 rounded-xl bg-googleBlue hover:bg-googleBlue-hover text-white text-xs font-semibold shadow-glow-blue transition-all duration-200">
+                    class="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-googleBlue hover:bg-googleBlue-hover text-white text-xs font-semibold shadow-glow-blue transition-all duration-200 min-h-[44px]">
                     <i class="ph-bold ph-plus text-sm"></i>
                     <span>Novo Cliente</span>
                 </button>
@@ -504,7 +669,7 @@
         </header>
 
         <!-- CONTENT VIEWS CONTAINER -->
-        <main class="flex-1 p-8">
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 w-full">
 
             <!-- ========================================== -->
             <!-- VIEW 1: DASHBOARD GERAL                    -->
@@ -1597,163 +1762,515 @@
 
             </section>
 
-            <!-- ========================================== -->
-            <!-- VIEW 4: CONTROLE FINANCEIRO                -->
-            <!-- ========================================== -->
+            <!-- ======================================================== -->
+            <!-- VIEW 4: CONTROLE FINANCEIRO & FLUXO DE CAIXA PROFISSIONAL -->
+            <!-- ======================================================== -->
             <section id="view-finance" class="view-panel space-y-8 hidden animate-fadeIn">
 
-                <!-- CARDS FINANCEIROS -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                    <!-- Card 1: Faturamento Bruto -->
-                    <div class="glass-card glass-card-hover rounded-2xl p-5 gradient-border-blue relative">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Faturamento
-                                Bruto</span>
-                            <div
-                                class="w-9 h-9 rounded-xl bg-blue-500/10 text-googleBlue flex items-center justify-center border border-googleBlue/20">
-                                <i class="ph-bold ph-chart-line-up text-lg"></i>
+                <!-- CABEÇALHO DO MÓDULO FINANCEIRO -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-white/5">
+                    <div>
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-10 h-10 rounded-xl bg-googleBlue/20 text-googleBlue flex items-center justify-center border border-googleBlue/30 shadow-glow-blue shrink-0">
+                                <i class="ph-bold ph-wallet text-xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="font-display font-bold text-xl sm:text-2xl text-white tracking-tight">
+                                    Controle Financeiro & Fluxo de Caixa
+                                </h2>
+                                <p class="text-xs sm:text-sm text-slate-400 mt-0.5">
+                                    Gestão em tempo real de faturamento, despesas operacionais e retiradas pessoais.
+                                </p>
                             </div>
                         </div>
-                        <div class="mt-4 flex items-baseline gap-2">
-                            <span id="val-faturamento" class="font-display font-extrabold text-3xl text-white">R$
-                                0,00</span>
-                            <span
-                                class="text-xs font-semibold text-emeraldAccent bg-emeraldAccent/10 px-2 py-0.5 rounded-full border border-emeraldAccent/20">
-                                Tempo real
-                            </span>
-                        </div>
-                        <p class="text-xs text-slate-400 mt-2">Volume financeiro total acumulado</p>
                     </div>
 
-                    <!-- Card 2: Receita Recorrente (MRR) -->
-                    <div class="glass-card glass-card-hover rounded-2xl p-5 gradient-border-emerald relative">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Receita
-                                Recorrente (MRR)</span>
-                            <div
-                                class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emeraldAccent flex items-center justify-center border border-emeraldAccent/20">
-                                <i class="ph-bold ph-arrows-clockwise text-lg"></i>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex items-baseline gap-2">
-                            <span id="val-mrr" class="font-display font-extrabold text-3xl text-emeraldAccent">R$
-                                0,00</span>
-                            <span class="text-xs text-slate-400">/mês</span>
-                        </div>
-                        <p class="text-xs text-slate-400 mt-2">Gestão contínua de reputação & Maps</p>
-                    </div>
-
-                    <!-- Card 3: Receita Transacional -->
-                    <div class="glass-card glass-card-hover rounded-2xl p-5 relative">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Receita
-                                Transacional</span>
-                            <div
-                                class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
-                                <i class="ph-bold ph-shopping-bag text-lg"></i>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex items-baseline gap-2">
-                            <span id="val-transacional" class="font-display font-extrabold text-3xl text-white">R$
-                                0,00</span>
-                            <span class="text-xs text-slate-400">avulso</span>
-                        </div>
-                        <p class="text-xs text-slate-400 mt-2">Placas NFC & Sites Premium</p>
-                    </div>
-
-                    <!-- Card 4: Ticket Médio do Cliente -->
-                    <div class="glass-card glass-card-hover rounded-2xl p-5 relative">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ticket
-                                Médio</span>
-                            <div
-                                class="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center border border-purple-500/20">
-                                <i class="ph-bold ph-receipt text-lg"></i>
-                            </div>
-                        </div>
-                        <div class="mt-4 flex items-baseline gap-2">
-                            <span id="val-ticket-medio" class="font-display font-extrabold text-3xl text-white">R$
-                                0,00</span>
-                            <span
-                                class="text-xs text-emeraldAccent font-semibold bg-emeraldAccent/10 px-2 py-0.5 rounded-full border border-emeraldAccent/20">
-                                Média geral
-                            </span>
-                        </div>
-                        <p class="text-xs text-slate-400 mt-2">Média de faturamento por cliente</p>
+                    <div class="flex items-center gap-2.5 self-start sm:self-auto">
+                        <button type="button" onclick="exportarExtratoFinanceiroCSV()"
+                            class="px-4 py-2.5 rounded-xl glass-input text-xs font-semibold text-slate-200 hover:text-white hover:bg-slate-800 transition-colors flex items-center gap-2 min-h-[44px]">
+                            <i class="ph-bold ph-download-simple text-base text-googleBlue"></i>
+                            <span>Exportar Relatório CSV</span>
+                        </button>
                     </div>
                 </div>
 
-                <!-- GRÁFICO DE RECEITA POR PRODUTO -->
-                <div class="glass-card rounded-2xl p-6 border border-white/10 shadow-glass">
-                    <div
-                        class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/5">
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <div class="w-2.5 h-2.5 rounded-full bg-emeraldAccent shadow-glow-emerald"></div>
-                                <h3 class="font-display font-bold text-lg text-white">Segmentação de Receita por Mix de
-                                    Produtos</h3>
+                <!-- 1. DASHBOARD FINANCEIRO COM 3 CARDS DE DESTAQUE -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <!-- Card 1: Entradas (Texto Verde) -->
+                    <div class="glass-card glass-card-hover rounded-2xl p-6 gradient-border-emerald relative overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Entradas</span>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Faturamento & Recebimentos</p>
                             </div>
-                            <p class="text-xs text-slate-400 mt-1">Comparativo de faturamento entre Placa Avulsa (R$99),
-                                Combo (R$297) e Sites Premium (R$800)</p>
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center border border-emerald-500/30 shadow-glow-emerald">
+                                <i class="ph-bold ph-arrow-down-left text-2xl"></i>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-4 text-xs">
-                            <div class="flex items-center gap-1.5">
-                                <span class="w-3 h-3 rounded bg-blue-500"></span>
-                                <span class="text-slate-300">Placa Avulsa (R$ 99)</span>
-                            </div>
-                            <div class="flex items-center gap-1.5">
-                                <span class="w-3 h-3 rounded bg-emerald-500"></span>
-                                <span class="text-slate-300">Combo Gestão (R$ 297)</span>
-                            </div>
-                            <div class="flex items-center gap-1.5">
-                                <span class="w-3 h-3 rounded bg-purple-500"></span>
-                                <span class="text-slate-300">Site Premium (R$ 800)</span>
-                            </div>
+                        <div class="mt-5 flex items-baseline gap-2">
+                            <span id="fin-total-entradas" class="font-display font-extrabold text-3xl sm:text-4xl text-emerald-400 tracking-tight">
+                                R$ 0,00
+                            </span>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400">
+                            <span class="flex items-center gap-1.5 text-emerald-400 font-semibold">
+                                <span class="w-2 h-2 rounded-full bg-emeraldAccent animate-pulse"></span>
+                                Total Acumulado
+                            </span>
+                            <span class="text-[11px] text-slate-500">Coleção transacoes</span>
                         </div>
                     </div>
-                    <div class="mt-6 h-80 w-full relative">
-                        <canvas id="chart-finance-products"></canvas>
+
+                    <!-- Card 2: Saídas (Texto Vermelho) -->
+                    <div class="glass-card glass-card-hover rounded-2xl p-6 relative overflow-hidden border border-red-500/25">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-bold text-red-400 uppercase tracking-wider">Saídas</span>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Gastos, Compras & Retiradas</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-red-500/15 text-red-400 flex items-center justify-center border border-red-500/30">
+                                <i class="ph-bold ph-arrow-up-right text-2xl"></i>
+                            </div>
+                        </div>
+                        <div class="mt-5 flex items-baseline gap-2">
+                            <span id="fin-total-saidas" class="font-display font-extrabold text-3xl sm:text-4xl text-red-400 tracking-tight">
+                                R$ 0,00
+                            </span>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400">
+                            <span class="flex items-center gap-1.5 text-red-400 font-semibold">
+                                <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                                Despesas Totais
+                            </span>
+                            <span class="text-[11px] text-slate-500">Custos & Retiradas</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Saldo Atual (Texto Azul / Destaque) -->
+                    <div class="glass-card glass-card-hover rounded-2xl p-6 gradient-border-blue relative overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-bold text-blue-400 uppercase tracking-wider">Saldo Atual</span>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Disponível Líquido em Caixa</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-blue-500/15 text-googleBlue flex items-center justify-center border border-googleBlue/30 shadow-glow-blue">
+                                <i class="ph-bold ph-scales text-2xl"></i>
+                            </div>
+                        </div>
+                        <div class="mt-5 flex items-baseline gap-2">
+                            <span id="fin-saldo-atual" class="font-display font-extrabold text-3xl sm:text-4xl text-googleBlue tracking-tight">
+                                R$ 0,00
+                            </span>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400">
+                            <span id="fin-saldo-badge" class="inline-flex items-center text-xs font-semibold text-emeraldAccent bg-emeraldAccent/10 px-2.5 py-0.5 rounded-full border border-emeraldAccent/20">
+                                <i class="ph-bold ph-trend-up mr-1 text-[11px]"></i> Saldo Positivo
+                            </span>
+                            <span class="text-[11px] text-slate-500">Entradas - Saídas</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- HISTÓRICO DE LANÇAMENTOS RECENTES -->
-                <div class="glass-card rounded-2xl p-6 border border-white/10 shadow-glass">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                        <div>
-                            <h3 class="font-display font-bold text-lg text-white flex items-center gap-2">
-                                <i class="ph-bold ph-clock-counter-clockwise text-googleBlue"></i>
-                                <span>Histórico de Lançamentos Recentes</span>
-                            </h3>
-                            <p class="text-xs text-slate-400 mt-1">Fluxo de caixa de entradas em tempo real</p>
+                <!-- 2. GRID PRINCIPAL: FORMULÁRIO DE LANÇAMENTO RÁPIDO & HISTÓRICO DE LANÇAMENTOS -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+                    <!-- COLUNA ESQUERDA: FORMULÁRIO DE LANÇAMENTO RÁPIDO -->
+                    <div class="lg:col-span-5 xl:col-span-5 glass-card rounded-2xl p-6 border border-white/10 shadow-glass">
+                        <div class="flex items-center gap-2.5 pb-4 border-b border-white/5 mb-5">
+                            <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-googleBlue to-blue-400 flex items-center justify-center shadow-glow-blue shrink-0">
+                                <i class="ph-bold ph-plus-circle text-white text-base"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-display font-bold text-lg text-white">Novo Lançamento</h3>
+                                <p class="text-xs text-slate-400">Registre faturamento, custos ou retiradas</p>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <button onclick="exportFinanceCSV()"
-                                class="px-3.5 py-1.5 rounded-xl glass-input text-xs text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors">
-                                <i class="ph-bold ph-download-simple"></i>
-                                <span>Exportar Relatório</span>
+
+                        <form id="form-transacao-financeira" onsubmit="salvarTransacao(event)" class="space-y-5">
+                            <!-- SELETOR SIMPLES PARA O TIPO ('Entrada' ou 'Saída') -->
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
+                                    Tipo de Lançamento
+                                </label>
+                                <input type="hidden" id="transacao-tipo" value="entrada">
+                                <div class="grid grid-cols-2 gap-3 p-1 rounded-xl bg-slate-900/80 border border-white/10">
+                                    <button type="button" id="btn-tipo-entrada" onclick="setTransacaoTipo('entrada')"
+                                        class="py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all min-h-[44px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-glow-emerald">
+                                        <i class="ph-bold ph-arrow-down-left text-base"></i>
+                                        <span>Entrada (+)</span>
+                                    </button>
+                                    <button type="button" id="btn-tipo-saida" onclick="setTransacaoTipo('saida')"
+                                        class="py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all min-h-[44px] text-slate-400 hover:text-slate-200">
+                                        <i class="ph-bold ph-arrow-up-right text-base"></i>
+                                        <span>Saída (-)</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- CAMPO DE VALOR FORMATADO PARA MOEDA -->
+                            <div>
+                                <label for="transacao-valor" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
+                                    Valor (R$)
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold font-mono text-xs">
+                                        R$
+                                    </span>
+                                    <input type="text" id="transacao-valor" required
+                                        placeholder="0,00"
+                                        oninput="formatarInputMoeda(event)"
+                                        class="w-full pl-11 pr-4 py-3 rounded-xl glass-input text-sm text-white font-mono font-bold placeholder-slate-500 outline-none transition-all min-h-[46px] focus:ring-2 focus:ring-googleBlue/40">
+                                </div>
+                            </div>
+
+                            <!-- CAMPO DE DESCRIÇÃO -->
+                            <div>
+                                <label for="transacao-descricao" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
+                                    Descrição do Lançamento
+                                </label>
+                                <input type="text" id="transacao-descricao" required
+                                    placeholder="Ex: Venda Combo Gestão, R$230 em placas..."
+                                    class="w-full px-4 py-3 rounded-xl glass-input text-sm text-white placeholder-slate-500 outline-none transition-all min-h-[46px] focus:ring-2 focus:ring-googleBlue/40">
+
+                                <!-- SUGESTÕES RÁPIDAS (CHIPS DE 1-CLIQUE) -->
+                                <div class="mt-3">
+                                    <p class="text-[11px] text-slate-400 mb-1.5 font-medium">Sugestões rápidas de preenchimento:</p>
+                                    <div class="flex flex-wrap gap-1.5">
+                                        <button type="button" onclick="preencherSugestaoTransacao('Venda Combo Gestão', 'entrada', 297)"
+                                            class="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-[11px] font-medium border border-emerald-500/20 transition-colors">
+                                            + Venda Combo (R$297)
+                                        </button>
+                                        <button type="button" onclick="preencherSugestaoTransacao('Venda Placa NFC Avulsa', 'entrada', 99)"
+                                            class="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-[11px] font-medium border border-emerald-500/20 transition-colors">
+                                            + Placa Avulsa (R$99)
+                                        </button>
+                                        <button type="button" onclick="preencherSugestaoTransacao('Site Premium Local SEO', 'entrada', 800)"
+                                            class="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-[11px] font-medium border border-emerald-500/20 transition-colors">
+                                            + Site Premium (R$800)
+                                        </button>
+                                        <button type="button" onclick="preencherSugestaoTransacao('R$230,00 em compra de placas', 'saida', 230)"
+                                            class="px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 text-[11px] font-medium border border-red-500/20 transition-colors">
+                                            - Compra de Placas
+                                        </button>
+                                        <button type="button" onclick="preencherSugestaoTransacao('Retirada para uso pessoal', 'saida')"
+                                            class="px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 text-[11px] font-medium border border-red-500/20 transition-colors">
+                                            - Retirada Pessoal
+                                        </button>
+                                        <button type="button" onclick="preencherSugestaoTransacao('Google Ads & Tráfego Pago', 'saida')"
+                                            class="px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 text-[11px] font-medium border border-red-500/20 transition-colors">
+                                            - Tráfego / Anúncios
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- BOTÃO DE SALVAR LANÇAMENTO -->
+                            <button type="submit" id="btn-salvar-transacao"
+                                class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-googleBlue to-blue-600 hover:from-blue-600 hover:to-googleBlue text-white font-semibold text-sm shadow-glow-blue transition-all duration-200 flex items-center justify-center gap-2 min-h-[48px] active:scale-[0.98]">
+                                <i class="ph-bold ph-check text-lg"></i>
+                                <span>Salvar Lançamento</span>
                             </button>
+                        </form>
+                    </div>
+
+                    <!-- COLUNA DIREITA: HISTÓRICO DE LANÇAMENTOS EM TEMPO REAL -->
+                    <div class="lg:col-span-7 xl:col-span-7 glass-card rounded-2xl p-6 border border-white/10 shadow-glass">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/5 mb-5">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-display font-bold text-lg text-white flex items-center gap-2">
+                                        <i class="ph-bold ph-clock-counter-clockwise text-googleBlue"></i>
+                                        <span>Histórico de Lançamentos</span>
+                                    </h3>
+                                    <span id="fin-transacoes-count"
+                                        class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-slate-800 text-slate-300 border border-white/5">
+                                        0 lançamentos
+                                    </span>
+                                </div>
+                                <p class="text-xs text-slate-400 mt-0.5">Atualização em tempo real via <code class="text-emerald-400">onSnapshot</code> no Firestore</p>
+                            </div>
+
+                            <!-- FILTROS RÁPIDOS NO HISTÓRICO -->
+                            <div class="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900/80 border border-white/10 self-start sm:self-auto">
+                                <button type="button" id="tab-filtro-todos" onclick="filtrarTransacoes('todos')"
+                                    class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all min-h-[36px] bg-googleBlue text-white shadow-glow-blue">
+                                    Todos
+                                </button>
+                                <button type="button" id="tab-filtro-entrada" onclick="filtrarTransacoes('entrada')"
+                                    class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-emerald-400 transition-all min-h-[36px]">
+                                    Entradas
+                                </button>
+                                <button type="button" id="tab-filtro-saida" onclick="filtrarTransacoes('saida')"
+                                    class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-red-400 transition-all min-h-[36px]">
+                                    Saídas
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- BARRA DE BUSCA INTERNA -->
+                        <div class="mb-4">
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <i class="ph-bold ph-magnifying-glass text-base"></i>
+                                </span>
+                                <input type="text" id="busca-transacoes-input" oninput="handleBuscaTransacao(event)"
+                                    placeholder="Filtrar lançamentos por descrição..."
+                                    class="w-full pl-10 pr-4 py-2.5 rounded-xl glass-input text-xs text-white placeholder-slate-500 outline-none transition-all min-h-[40px]">
+                            </div>
+                        </div>
+
+                        <!-- TABELA RESPONSIVA DE LANÇAMENTOS -->
+                        <div class="overflow-x-auto rounded-xl border border-white/5">
+                            <table class="w-full text-left text-sm">
+                                <thead>
+                                    <tr class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider border-b border-white/5 bg-slate-800/40">
+                                        <th class="py-3 px-4">Data/Hora</th>
+                                        <th class="py-3 px-4">Descrição</th>
+                                        <th class="py-3 px-4">Tipo</th>
+                                        <th class="py-3 px-4 text-right">Valor</th>
+                                        <th class="py-3 px-4 text-right">Excluir</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fin-transacoes-tbody" class="divide-y divide-white/5">
+                                    <!-- Populado reativamente via Firestore onSnapshot -->
+                                    <tr>
+                                        <td colspan="5" class="py-8 text-center text-slate-500 text-xs">
+                                            <i class="ph-bold ph-spinner animate-spin text-2xl text-googleBlue block mb-2 mx-auto"></i>
+                                            Carregando lançamentos em tempo real...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ======================================================== -->
+            <!-- VIEW 5: GESTÃO DE USUÁRIOS & CONTROLE DE ACESSO (DONO)   -->
+            <!-- ======================================================== -->
+            <section id="view-users" class="view-panel space-y-8 hidden animate-fadeIn">
+
+                <!-- HEADER DO PAINEL DE USUÁRIOS -->
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl glass-card border border-purple-500/20 bg-gradient-to-r from-purple-950/30 via-slate-900 to-slate-900 relative overflow-hidden">
+                    <div class="absolute -top-12 -right-12 w-48 h-48 bg-purple-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                    <div class="space-y-1 relative z-10">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                                <i class="ph-fill ph-shield-check text-purple-400"></i>
+                                <span>Acesso Restrito: Dono</span>
+                            </span>
+                            <span class="inline-flex items-center gap-1.5 text-[11px] text-emerald-400 font-medium">
+                                <span class="w-2 h-2 rounded-full bg-emeraldAccent animate-pulse"></span>
+                                <span>Firebase Firestore Ativo</span>
+                            </span>
+                        </div>
+                        <h2 class="font-display font-extrabold text-2xl text-white">Gestão de Usuários & Controle de Acesso</h2>
+                        <p class="text-xs text-slate-400 max-w-2xl">
+                            Cadastre novos membros da equipe (atendentes e vendedores), gerencie credenciais de login e audite permissões de acesso ao Apex CRM em tempo real.
+                        </p>
+                    </div>
+
+                    <div class="flex items-center gap-3 relative z-10">
+                        <div class="px-4 py-2 rounded-xl bg-purple-900/30 border border-purple-500/30 text-right">
+                            <p class="text-[10px] text-purple-300 font-semibold uppercase tracking-wider">Perfil Autenticado</p>
+                            <p class="text-xs font-bold text-white flex items-center justify-end gap-1.5 mt-0.5">
+                                <i class="ph-fill ph-crown text-amber-400 text-sm"></i>
+                                <span>Murilo Silva (Dono)</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARDS DE MÉTRICAS / KPIS DE USUÁRIOS -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <!-- Total de Usuários -->
+                    <div class="p-5 rounded-2xl glass-card border border-white/5 relative overflow-hidden group hover:border-purple-500/40 transition-all">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total de Usuários</span>
+                            <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center border border-purple-500/20">
+                                <i class="ph-bold ph-users text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-baseline gap-2">
+                            <span id="stat-total-users" class="font-display font-black text-3xl text-white">1</span>
+                            <span class="text-xs text-slate-500">cadastrado(s)</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-1">Sincronizados com a coleção 'usuarios'</p>
+                    </div>
+
+                    <!-- Donos / Administradores -->
+                    <div class="p-5 rounded-2xl glass-card border border-white/5 relative overflow-hidden group hover:border-amber-500/40 transition-all">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Administrador / Dono</span>
+                            <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
+                                <i class="ph-fill ph-crown text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-baseline gap-2">
+                            <span id="stat-dono-users" class="font-display font-black text-3xl text-amber-300">1</span>
+                            <span class="text-xs text-slate-500">titular (protegido)</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-1">Permissão total e intransferível</p>
+                    </div>
+
+                    <!-- Colaboradores Secundários -->
+                    <div class="p-5 rounded-2xl glass-card border border-white/5 relative overflow-hidden group hover:border-blue-500/40 transition-all">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Equipe Operacional</span>
+                            <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
+                                <i class="ph-bold ph-user-check text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-baseline gap-2">
+                            <span id="stat-equipe-users" class="font-display font-black text-3xl text-blue-400">0</span>
+                            <span class="text-xs text-slate-500">atendentes / vendedores</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-1">Acessos com gestão revogável</p>
+                    </div>
+                </div>
+
+                <!-- GRID: FORMULÁRIO DE NOVO USUÁRIO + LISTA REATIVA -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+                    <!-- COLUNA ESQUERDA: FORMULÁRIO DE CADASTRO (5 COLUNAS) -->
+                    <div class="lg:col-span-5 space-y-6">
+                        <div class="p-6 rounded-2xl glass-card border border-white/10 relative">
+                            <div class="flex items-center gap-3 pb-4 border-b border-white/10">
+                                <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30 shadow-glow-purple">
+                                    <i class="ph-bold ph-user-plus text-xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-display font-bold text-base text-white">Cadastrar Novo Usuário</h3>
+                                    <p class="text-xs text-slate-400">Gera credenciais salvas no Firestore</p>
+                                </div>
+                            </div>
+
+                            <form id="form-novo-usuario" onsubmit="handleCriarUsuario(event)" autocomplete="off" class="mt-5 space-y-4">
+                                <!-- Nome de Usuário -->
+                                <div>
+                                    <label for="user-new-name" class="block text-xs font-semibold text-slate-300 mb-1.5">
+                                        Nome de Usuário (Login) <span class="text-red-400">*</span>
+                                    </label>
+                                    <div class="relative">
+                                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                            <i class="ph-bold ph-user text-base"></i>
+                                        </span>
+                                        <input type="text" id="user-new-name" required autocomplete="off"
+                                            placeholder="Ex: Carlos Silva"
+                                            class="w-full pl-10 pr-3.5 py-2.5 rounded-xl glass-input text-xs text-white placeholder-slate-500 outline-none transition-all min-h-[42px] focus:ring-2 focus:ring-purple-500/40">
+                                    </div>
+                                    <span class="text-[10px] text-slate-500 mt-1 block">O colaborador usará este nome exato para entrar no sistema.</span>
+                                </div>
+
+                                <!-- Senha -->
+                                <div>
+                                    <label for="user-new-password" class="block text-xs font-semibold text-slate-300 mb-1.5">
+                                        Senha de Acesso <span class="text-red-400">*</span>
+                                    </label>
+                                    <div class="relative">
+                                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                            <i class="ph-bold ph-lock-key text-base"></i>
+                                        </span>
+                                        <input type="password" id="user-new-password" required autocomplete="new-password"
+                                            placeholder="Defina a senha do colaborador"
+                                            class="w-full pl-10 pr-10 py-2.5 rounded-xl glass-input text-xs text-white placeholder-slate-500 outline-none transition-all min-h-[42px] focus:ring-2 focus:ring-purple-500/40">
+                                        <button type="button" onclick="toggleNewUserPasswordVisibility()"
+                                            class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-white transition-colors"
+                                            title="Ver senha digitada">
+                                            <i id="user-new-pwd-eye" class="ph-bold ph-eye text-base"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Nível de Acesso (Role) -->
+                                <div>
+                                    <label for="user-new-role" class="block text-xs font-semibold text-slate-300 mb-1.5">
+                                        Nível de Acesso (Permissão) <span class="text-red-400">*</span>
+                                    </label>
+                                    <div class="relative">
+                                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                            <i class="ph-bold ph-shield-check text-base"></i>
+                                        </span>
+                                        <select id="user-new-role" required
+                                            class="w-full pl-10 pr-8 py-2.5 rounded-xl glass-input text-xs text-white outline-none transition-all min-h-[42px] focus:ring-2 focus:ring-purple-500/40 appearance-none bg-slate-900 cursor-pointer">
+                                            <option value="atendente">Atendente (Suporte & Atendimento)</option>
+                                            <option value="vendedor">Vendedor (Comercial & Prospecção)</option>
+                                        </select>
+                                        <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                                            <i class="ph-bold ph-caret-down text-sm"></i>
+                                        </span>
+                                    </div>
+                                    <p class="text-[10px] text-slate-400 mt-1.5 leading-relaxed">
+                                        Usuários secundários não visualizam nem alteram este painel de Gestão de Usuários.
+                                    </p>
+                                </div>
+
+                                <!-- Botão de Submissão -->
+                                <div class="pt-2">
+                                    <button type="submit" id="btn-create-user"
+                                        class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-glow-purple transition-all duration-200 flex items-center justify-center gap-2 min-h-[44px] active:scale-[0.98] cursor-pointer">
+                                        <i class="ph-bold ph-user-plus text-base"></i>
+                                        <span>Cadastrar Usuário no Firebase</span>
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm">
-                            <thead>
-                                <tr
-                                    class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider border-b border-white/5 bg-slate-800/30">
-                                    <th class="py-3 px-4 rounded-l-lg">Data</th>
-                                    <th class="py-3 px-4">Cliente</th>
-                                    <th class="py-3 px-4">Produto Adquirido</th>
-                                    <th class="py-3 px-4">Tipo</th>
-                                    <th class="py-3 px-4">Método</th>
-                                    <th class="py-3 px-4 text-right">Valor</th>
-                                    <th class="py-3 px-4 text-right rounded-r-lg">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="finance-table-body" class="divide-y divide-white/5">
-                                <!-- Dynamically filled via JS -->
-                            </tbody>
-                        </table>
+                    <!-- COLUNA DIREITA: LISTA REATIVA DE USUÁRIOS (7 COLUNAS) -->
+                    <div class="lg:col-span-7 space-y-6">
+                        <div class="p-6 rounded-2xl glass-card border border-white/10 relative">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-white/10 gap-2">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-googleBlue flex items-center justify-center border border-googleBlue/20">
+                                        <i class="ph-bold ph-address-book text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-display font-bold text-base text-white">Usuários Cadastrados</h3>
+                                        <p class="text-xs text-slate-400">Lista reativa em tempo real (<code class="text-purple-300 text-[11px]">onSnapshot</code> na coleção <code class="text-purple-300 text-[11px]">usuarios</code>)</p>
+                                    </div>
+                                </div>
+
+                                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400 self-start sm:self-auto">
+                                    <span class="w-2 h-2 rounded-full bg-emeraldAccent animate-pulse"></span>
+                                    <span>Ao Vivo</span>
+                                </div>
+                            </div>
+
+                            <!-- TABELA RESPONSIVA DE USUÁRIOS -->
+                            <div class="mt-4 overflow-x-auto rounded-xl border border-white/5">
+                                <table class="w-full text-left text-sm">
+                                    <thead>
+                                        <tr class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider border-b border-white/5 bg-slate-800/40">
+                                            <th class="py-3 px-4">Usuário</th>
+                                            <th class="py-3 px-4">Nível de Acesso</th>
+                                            <th class="py-3 px-4">Senha</th>
+                                            <th class="py-3 px-4">Criado Em</th>
+                                            <th class="py-3 px-4 text-right">Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="users-tbody" class="divide-y divide-white/5">
+                                        <tr>
+                                            <td colspan="5" class="py-8 text-center text-slate-500 text-xs">
+                                                <i class="ph-bold ph-spinner animate-spin text-2xl text-purple-400 block mb-2 mx-auto"></i>
+                                                Conectando à coleção 'usuarios' do Firestore...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="mt-4 p-3.5 rounded-xl bg-slate-900/60 border border-white/5 flex items-start gap-2.5">
+                                <i class="ph-bold ph-shield-check text-purple-400 text-base shrink-0 mt-0.5"></i>
+                                <p class="text-[11px] text-slate-400 leading-relaxed">
+                                    <strong class="text-slate-300">Regra de Segurança Estrita:</strong> O usuário principal (<strong class="text-purple-300">Murilo Silva</strong> com role <strong class="text-purple-300">'dono'</strong>) é protegido contra exclusão acidental por mecanismos redundantes de validação no front-end e no Firestore.
+                                </p>
+                            </div>
+                        </div>
                     </div>
+
                 </div>
 
             </section>
@@ -2724,6 +3241,8 @@
         </div>
     </div>
 
+    </div> <!-- FIM DO #crm-app-container -->
+
     <!-- TOAST NOTIFICATION CONTAINER -->
     <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
@@ -2736,12 +3255,16 @@
         import {
             getFirestore,
             collection,
-            addDoc,
+            query,
+            where,
             getDocs,
+            addDoc,
             updateDoc,
             deleteDoc,
             doc,
-            onSnapshot
+            onSnapshot,
+            serverTimestamp,
+            Timestamp
         } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
         // Configuração do Firebase
@@ -2762,6 +3285,14 @@
         const APP_DATA = {
             // Lista de clientes vazia (populada em tempo real via Firestore na coleção 'clientes')
             clients: [],
+
+            // Transações financeiras em tempo real (coleção 'transacoes')
+            transacoes: [],
+            transacoesFiltro: 'todos',
+            transacoesBusca: '',
+
+            // Usuários do sistema (coleção 'usuarios')
+            usuarios: [],
 
             // Histórico Financeiro gerado dinamicamente a partir dos clientes reais
             financialTransactions: [],
@@ -3091,11 +3622,32 @@
 
             // Inicia conexão e escuta em tempo real do Firestore
             initRealtimeFirestore();
+            initTransactionsRealtime();
+
+            const currentRole = sessionStorage.getItem('apex_crm_role');
+            if (currentRole === 'dono') {
+                initUsuariosRealtime();
+            }
         }
 
         // --- 3. NAVIGATION (SPA VIEW SWITCHING) ---
         function switchView(viewName) {
+            // Validação de acesso exclusivo do perfil dono
+            if (viewName === 'users') {
+                const currentRole = sessionStorage.getItem('apex_crm_role');
+                if (currentRole !== 'dono') {
+                    showToast('Acesso negado: Apenas o Dono pode acessar a Gestão de Usuários.', 'warning');
+                    switchView('dashboard');
+                    return;
+                }
+            }
+
             APP_DATA.currentView = viewName;
+
+            // Fechar sidebar no mobile automaticamente ao navegar
+            if (window.innerWidth < 768) {
+                toggleMobileSidebar(false);
+            }
 
             // Update Navigation button styles
             document.querySelectorAll('.nav-item').forEach(btn => {
@@ -3142,8 +3694,12 @@
                     break;
                 case 'finance':
                     breadcrumb.innerText = 'Controle Financeiro';
-                    headerTitle.innerText = 'Fluxo de Caixa & Mix de Produtos';
-                    setTimeout(() => initFinanceProductsChart(), 50);
+                    headerTitle.innerText = 'Fluxo de Caixa & Transações';
+                    renderFinanceView();
+                    break;
+                case 'users':
+                    breadcrumb.innerText = 'Gestão de Usuários';
+                    headerTitle.innerText = 'Controle de Acesso & Perfis da Equipe';
                     break;
             }
 
@@ -4320,148 +4876,459 @@
             });
         }
 
-        // --- 8. VIEW 4: CONTROLE FINANCEIRO ---
-        function renderFinanceView() {
-            atualizarDashboardFinanceiro(APP_DATA.clients);
-            renderTransactionsTable();
-            initFinanceProductsChart();
+        // ========================================================
+        // --- 8. MÓDULO DE CONTROLE FINANCEIRO & FLUXO DE CAIXA  ---
+        // ========================================================
+
+        // Variável de controle do listener em tempo real
+        let unsubscribeTransacoes = null;
+
+        // 8.1 Inicialização e escuta reativa da coleção 'transacoes' (onSnapshot)
+        function initTransactionsRealtime() {
+            try {
+                const transCol = collection(db, 'transacoes');
+                if (unsubscribeTransacoes) {
+                    unsubscribeTransacoes();
+                }
+
+                unsubscribeTransacoes = onSnapshot(transCol, (snapshot) => {
+                    const transList = [];
+                    snapshot.forEach((docSnap) => {
+                        transList.push({
+                            id: docSnap.id,
+                            ...docSnap.data()
+                        });
+                    });
+
+                    // Ordena cronologicamente decrescente (mais recentes primeiro)
+                    transList.sort((a, b) => {
+                        const timeA = getTimestampMs(a.data);
+                        const timeB = getTimestampMs(b.data);
+                        return timeB - timeA;
+                    });
+
+                    APP_DATA.transacoes = transList;
+                    atualizarPainelFinanceiro(transList);
+                    renderizarHistoricoTransacoes();
+                }, (error) => {
+                    console.error("Erro na escuta em tempo real da coleção transacoes:", error);
+                    showToast("Erro ao sincronizar fluxo de caixa: " + error.message, "error");
+                });
+            } catch (err) {
+                console.error("Falha ao inicializar onSnapshot de transacoes:", err);
+            }
         }
 
-        function renderTransactionsTable() {
-            const tbody = document.getElementById('finance-table-body');
-            if (!tbody) return;
-            tbody.innerHTML = '';
+        // Helper seguro para converter Timestamp do Firestore em milissegundos
+        function getTimestampMs(rawDate) {
+            if (!rawDate) return 0;
+            if (rawDate.toMillis && typeof rawDate.toMillis === 'function') {
+                return rawDate.toMillis();
+            }
+            if (rawDate.seconds) {
+                return rawDate.seconds * 1000;
+            }
+            if (rawDate instanceof Date) {
+                return rawDate.getTime();
+            }
+            const parsed = Date.parse(rawDate);
+            return isNaN(parsed) ? 0 : parsed;
+        }
 
-            if (APP_DATA.financialTransactions.length === 0) {
+        // 8.2 Cálculo dinâmico e reativo dos 3 cards de destaque
+        function atualizarPainelFinanceiro(transacoes = APP_DATA.transacoes) {
+            let totalEntradas = 0;
+            let totalSaidas = 0;
+
+            transacoes.forEach(t => {
+                const val = parseFloat(t.valor) || 0;
+                const tipo = (t.tipo || '').toLowerCase().trim();
+                if (tipo === 'entrada') {
+                    totalEntradas += val;
+                } else if (tipo === 'saida' || tipo === 'saída') {
+                    totalSaidas += val;
+                }
+            });
+
+            const saldoAtual = totalEntradas - totalSaidas;
+
+            const formatBRL = (num) => {
+                return (Number(num) || 0).toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                });
+            };
+
+            // Atualização dos 3 cards de destaque do Dashboard Financeiro
+            const elEntradas = document.getElementById('fin-total-entradas');
+            if (elEntradas) elEntradas.innerText = formatBRL(totalEntradas);
+
+            const elSaidas = document.getElementById('fin-total-saidas');
+            if (elSaidas) elSaidas.innerText = formatBRL(totalSaidas);
+
+            const elSaldo = document.getElementById('fin-saldo-atual');
+            if (elSaldo) {
+                elSaldo.innerText = formatBRL(saldoAtual);
+                if (saldoAtual >= 0) {
+                    elSaldo.className = 'font-display font-extrabold text-3xl sm:text-4xl text-googleBlue tracking-tight';
+                } else {
+                    elSaldo.className = 'font-display font-extrabold text-3xl sm:text-4xl text-red-400 tracking-tight';
+                }
+            }
+
+            const elBadge = document.getElementById('fin-saldo-badge');
+            if (elBadge) {
+                if (saldoAtual >= 0) {
+                    elBadge.className = 'inline-flex items-center text-xs font-semibold text-emeraldAccent bg-emeraldAccent/10 px-2.5 py-0.5 rounded-full border border-emeraldAccent/20';
+                    elBadge.innerHTML = '<i class="ph-bold ph-trend-up mr-1 text-[11px]"></i> Saldo Positivo';
+                } else {
+                    elBadge.className = 'inline-flex items-center text-xs font-semibold text-red-400 bg-red-500/10 px-2.5 py-0.5 rounded-full border border-red-500/20';
+                    elBadge.innerHTML = '<i class="ph-bold ph-warning mr-1 text-[11px]"></i> Saldo Negativo';
+                }
+            }
+
+            // Atualiza também o contador de lançamentos
+            const elCount = document.getElementById('fin-transacoes-count');
+            if (elCount) {
+                elCount.innerText = `${transacoes.length} lançamento${transacoes.length !== 1 ? 's' : ''}`;
+            }
+        }
+
+        // 8.3 Renderização da tabela e lista de histórico de lançamentos
+        function renderizarHistoricoTransacoes() {
+            const tbody = document.getElementById('fin-transacoes-tbody');
+            if (!tbody) return;
+
+            let filtradas = [...APP_DATA.transacoes];
+
+            // Aplica filtro por Tipo ('todos', 'entrada', 'saida')
+            if (APP_DATA.transacoesFiltro === 'entrada') {
+                filtradas = filtradas.filter(t => (t.tipo || '').toLowerCase().trim() === 'entrada');
+            } else if (APP_DATA.transacoesFiltro === 'saida') {
+                filtradas = filtradas.filter(t => (t.tipo || '').toLowerCase().trim() === 'saida' || (t.tipo || '').toLowerCase().trim() === 'saída');
+            }
+
+            // Aplica filtro de busca textual
+            if (APP_DATA.transacoesBusca && APP_DATA.transacoesBusca.trim() !== '') {
+                const termo = APP_DATA.transacoesBusca.toLowerCase().trim();
+                filtradas = filtradas.filter(t => (t.descricao || '').toLowerCase().includes(termo));
+            }
+
+            const elCounter = document.getElementById('fin-transacoes-count');
+            if (elCounter) {
+                elCounter.innerText = `${filtradas.length} de ${APP_DATA.transacoes.length} lançamento${APP_DATA.transacoes.length !== 1 ? 's' : ''}`;
+            }
+
+            if (filtradas.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="py-8 text-center text-slate-500 text-xs">
-                            <i class="ph-bold ph-receipt text-2xl text-slate-600 block mb-1"></i>
-                            Nenhuma transação financeira registrada ainda.
+                        <td colspan="5" class="py-12 text-center text-slate-500">
+                            <i class="ph-bold ph-wallet text-3xl text-slate-600 block mb-2 mx-auto"></i>
+                            <p class="text-sm font-medium text-slate-400">Nenhum lançamento encontrado</p>
+                            <p class="text-xs text-slate-500 mt-1">Utilize o formulário de lançamento rápido para registrar receitas ou despesas.</p>
                         </td>
                     </tr>
                 `;
                 return;
             }
 
-            APP_DATA.financialTransactions.forEach(tx => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-slate-800/40 transition-colors border-b border-white/5';
+            tbody.innerHTML = filtradas.map(t => {
+                const isEntrada = (t.tipo || '').toLowerCase().trim() === 'entrada';
+                const dataFormatada = formatarDataHoraTransacao(t.data);
+                const valorNum = parseFloat(t.valor) || 0;
+                const valorFormatado = valorNum.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-                const isRecurrent = tx.type === 'Recorrente';
-                const typeBadge = isRecurrent
-                    ? `<span class="px-2 py-0.5 text-[10px] font-semibold rounded bg-emeraldAccent/15 text-emerald-400 border border-emeraldAccent/30">Recorrente (MRR)</span>`
-                    : `<span class="px-2 py-0.5 text-[10px] font-semibold rounded bg-blue-500/15 text-blue-400 border border-googleBlue/30">Transacional</span>`;
+                const tipoBadge = isEntrada
+                    ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-emeraldAccent/15 text-emerald-400 border border-emeraldAccent/30">
+                         <i class="ph-bold ph-arrow-down-left text-[11px]"></i> Entrada
+                       </span>`
+                    : `<span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-red-500/15 text-red-400 border border-red-500/30">
+                         <i class="ph-bold ph-arrow-up-right text-[11px]"></i> Saída
+                       </span>`;
 
-                tr.innerHTML = `
-          <td class="py-3 px-4 text-xs font-mono text-slate-400">${tx.date}</td>
-          <td class="py-3 px-4 font-semibold text-white text-xs">${tx.client}</td>
-          <td class="py-3 px-4 text-xs text-slate-300">${tx.product}</td>
-          <td class="py-3 px-4">${typeBadge}</td>
-          <td class="py-3 px-4 text-xs text-slate-400 flex items-center gap-1.5 pt-4">
-            <i class="ph-bold ph-credit-card text-slate-500"></i> ${tx.method}
-          </td>
-          <td class="py-3 px-4 text-right font-mono font-bold text-white text-xs">
-            R$ ${tx.value.toFixed(2).replace('.', ',')}
-          </td>
-          <td class="py-3 px-4 text-right">
-            <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emeraldAccent bg-emeraldAccent/10 px-2 py-0.5 rounded-full">
-              <i class="ph-bold ph-check text-[10px]"></i> ${tx.status}
-            </span>
-          </td>
-        `;
-                tbody.appendChild(tr);
-            });
+                const valorStyle = isEntrada
+                    ? 'text-emeraldAccent font-bold font-mono'
+                    : 'text-red-400 font-bold font-mono';
+
+                const sinal = isEntrada ? '+' : '-';
+                const descLimpa = (t.descricao || 'Sem descrição').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+                return `
+                    <tr class="hover:bg-slate-800/40 transition-colors border-b border-white/5">
+                        <td class="py-3.5 px-4 text-xs font-mono text-slate-400 whitespace-nowrap">
+                            <div class="flex items-center gap-1.5">
+                                <i class="ph-bold ph-calendar-blank text-slate-500"></i>
+                                <span>${dataFormatada}</span>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4 text-sm font-medium text-white max-w-xs break-words">
+                            ${t.descricao || 'Sem descrição'}
+                        </td>
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            ${tipoBadge}
+                        </td>
+                        <td class="py-3.5 px-4 text-right whitespace-nowrap text-sm ${valorStyle}">
+                            ${sinal} ${valorFormatado}
+                        </td>
+                        <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                            <button type="button" onclick="excluirTransacao('${t.id}', '${descLimpa}')"
+                                title="Excluir lançamento do Firestore"
+                                class="p-2.5 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all min-h-[44px] min-w-[44px] inline-flex items-center justify-center">
+                                <i class="ph-bold ph-trash-simple text-base"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
-        function initFinanceProductsChart() {
-            const ctx = document.getElementById('chart-finance-products');
-            if (!ctx) return;
+        // Helper de formatação de data/hora para padrão brasileiro
+        function formatarDataHoraTransacao(raw) {
+            if (!raw) return new Date().toLocaleDateString('pt-BR');
+            if (raw.toDate && typeof raw.toDate === 'function') {
+                const d = raw.toDate();
+                return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            }
+            if (raw.seconds) {
+                const d = new Date(raw.seconds * 1000);
+                return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            }
+            if (raw instanceof Date) {
+                return raw.toLocaleDateString('pt-BR') + ' ' + raw.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            }
+            const parsed = new Date(raw);
+            if (!isNaN(parsed.getTime())) {
+                return parsed.toLocaleDateString('pt-BR') + ' ' + parsed.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            }
+            return String(raw);
+        }
 
-            if (chartFinanceProductsInstance) {
-                chartFinanceProductsInstance.destroy();
+        // 8.4 Salvar novo lançamento no Firestore (addDoc na coleção 'transacoes')
+        async function salvarTransacao(event) {
+            if (event) event.preventDefault();
+
+            const tipoInput = document.getElementById('transacao-tipo');
+            const valorInput = document.getElementById('transacao-valor');
+            const descInput = document.getElementById('transacao-descricao');
+            const btnSubmit = document.getElementById('btn-salvar-transacao');
+
+            const tipo = (tipoInput ? tipoInput.value : 'entrada').toLowerCase().trim();
+            let rawValor = (valorInput ? valorInput.value : '').trim();
+            const descricao = (descInput ? descInput.value : '').trim();
+
+            // Normalização segura do valor digitado
+            rawValor = rawValor.replace('R$', '').replace(/\s/g, '');
+            if (rawValor.includes(',') && rawValor.includes('.')) {
+                rawValor = rawValor.replace(/\./g, '').replace(',', '.');
+            } else if (rawValor.includes(',')) {
+                rawValor = rawValor.replace(',', '.');
+            }
+            const valor = parseFloat(rawValor);
+
+            if (!valor || isNaN(valor) || valor <= 0) {
+                showToast('Por favor, informe um valor numérico válido maior que zero.', 'error');
+                if (valorInput) valorInput.focus();
+                return;
             }
 
-            chartFinanceProductsInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Placa Avulsa (R$ 99)', 'Combo Gestão (R$ 297)', 'Sites Premium (R$ 800)'],
-                    datasets: [
-                        {
-                            label: 'Faturamento Total (R$)',
-                            data: [
-                                APP_DATA.productSalesStats.placaAvulsa.total,
-                                APP_DATA.productSalesStats.comboGestao.total,
-                                APP_DATA.productSalesStats.sitePremium.total
-                            ],
-                            backgroundColor: [
-                                'rgba(26, 115, 232, 0.75)',
-                                'rgba(16, 185, 129, 0.75)',
-                                'rgba(168, 85, 247, 0.75)'
-                            ],
-                            borderColor: [
-                                '#1A73E8',
-                                '#10B981',
-                                '#A855F7'
-                            ],
-                            borderWidth: 1.5,
-                            borderRadius: 8,
-                            borderSkipped: false
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                            titleColor: '#ffffff',
-                            bodyColor: '#cbd5e1',
-                            borderColor: 'rgba(255, 255, 255, 0.1)',
-                            borderWidth: 1,
-                            padding: 12,
-                            callbacks: {
-                                label: function (context) {
-                                    return 'Faturamento acumulado: R$ ' + context.parsed.y.toLocaleString('pt-BR');
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: '#94a3b8', font: { family: 'Inter', size: 12 } }
-                        },
-                        y: {
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                            ticks: {
-                                color: '#94a3b8',
-                                font: { family: 'Inter', size: 11 },
-                                callback: value => 'R$ ' + (value / 1000) + 'k'
-                            }
-                        }
-                    }
+            if (!descricao) {
+                showToast('Por favor, informe o motivo/descrição do lançamento.', 'error');
+                if (descInput) descInput.focus();
+                return;
+            }
+
+            const originalBtnHtml = btnSubmit ? btnSubmit.innerHTML : '';
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = `<i class="ph-bold ph-spinner animate-spin text-base"></i><span>Salvando no Firestore...</span>`;
+            }
+
+            try {
+                // Inclusão na nova coleção 'transacoes' com os campos exigidos:
+                // tipo, valor, descricao, data (timestamp)
+                await addDoc(collection(db, 'transacoes'), {
+                    tipo: tipo,
+                    valor: valor,
+                    descricao: descricao,
+                    data: serverTimestamp()
+                });
+
+                showToast(`Lançamento de ${tipo === 'entrada' ? 'Entrada' : 'Saída'} salvo com sucesso no Firestore!`, 'success');
+
+                // Limpeza dos campos do formulário
+                if (valorInput) valorInput.value = '';
+                if (descInput) descInput.value = '';
+                setTransacaoTipo('entrada');
+            } catch (err) {
+                console.error("Erro ao gravar lançamento na coleção transacoes:", err);
+                showToast("Erro ao gravar no Firestore: " + err.message, "error");
+            } finally {
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = originalBtnHtml;
                 }
-            });
+            }
         }
 
-        function exportFinanceCSV() {
-            let csv = 'Data;Cliente;Produto;Tipo;Metodo;Valor;Status\n';
-            APP_DATA.financialTransactions.forEach(tx => {
-                csv += `${tx.date};${tx.client};${tx.product};${tx.type};${tx.method};R$ ${tx.value.toFixed(2)};${tx.status}\n`;
+        // 8.5 Exclusão de lançamento no Firestore (deleteDoc)
+        async function excluirTransacao(id, desc) {
+            if (!id) return;
+            const nomeDesc = desc ? `"${desc}"` : 'este lançamento';
+            if (!confirm(`Deseja realmente excluir permanentemente ${nomeDesc} do Firestore?`)) {
+                return;
+            }
+
+            try {
+                await deleteDoc(doc(db, 'transacoes', id));
+                showToast('Lançamento excluído com sucesso do Firestore!', 'success');
+            } catch (err) {
+                console.error('Erro ao excluir transação no Firestore:', err);
+                showToast('Erro ao excluir: ' + err.message, 'error');
+            }
+        }
+
+        // 8.6 Alternador de Tipo no Formulário ('Entrada' ou 'Saída')
+        function setTransacaoTipo(tipo) {
+            const inputTipo = document.getElementById('transacao-tipo');
+            const btnEntrada = document.getElementById('btn-tipo-entrada');
+            const btnSaida = document.getElementById('btn-tipo-saida');
+
+            if (inputTipo) inputTipo.value = tipo;
+
+            if (tipo === 'entrada') {
+                if (btnEntrada) {
+                    btnEntrada.className = 'py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all min-h-[44px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-glow-emerald';
+                }
+                if (btnSaida) {
+                    btnSaida.className = 'py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all min-h-[44px] text-slate-400 hover:text-slate-200';
+                }
+            } else {
+                if (btnEntrada) {
+                    btnEntrada.className = 'py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all min-h-[44px] text-slate-400 hover:text-slate-200';
+                }
+                if (btnSaida) {
+                    btnSaida.className = 'py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all min-h-[44px] bg-red-500/20 text-red-400 border border-red-500/40';
+                }
+            }
+        }
+
+        // 8.7 Sugestões rápidas de preenchimento (1-clique)
+        function preencherSugestaoTransacao(descricao, tipo, valor = null) {
+            const descInput = document.getElementById('transacao-descricao');
+            const valorInput = document.getElementById('transacao-valor');
+
+            if (descInput) descInput.value = descricao;
+            setTransacaoTipo(tipo);
+
+            if (valor !== null && valorInput) {
+                const parts = Number(valor).toFixed(2).split('.');
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                valorInput.value = 'R$ ' + parts.join(',');
+            } else if (valorInput && !valorInput.value) {
+                valorInput.focus();
+            }
+        }
+
+        // 8.8 Filtragem de transações no Histórico
+        function filtrarTransacoes(filtro) {
+            APP_DATA.transacoesFiltro = filtro;
+
+            const tabs = ['todos', 'entrada', 'saida'];
+            tabs.forEach(tab => {
+                const btn = document.getElementById(`tab-filtro-${tab}`);
+                if (!btn) return;
+                if (tab === filtro) {
+                    btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all min-h-[36px] bg-googleBlue text-white shadow-glow-blue';
+                } else {
+                    btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition-all min-h-[36px]';
+                }
+            });
+
+            renderizarHistoricoTransacoes();
+        }
+
+        // 8.9 Busca em tempo real por descrição
+        function handleBuscaTransacao(event) {
+            APP_DATA.transacoesBusca = event.target.value || '';
+            renderizarHistoricoTransacoes();
+        }
+
+        // 8.10 Máscara monetária em tempo real ao digitar
+        function formatarInputMoeda(e) {
+            let digits = e.target.value.replace(/\D/g, '');
+            if (!digits) {
+                e.target.value = '';
+                return;
+            }
+            const num = (parseInt(digits, 10) / 100).toFixed(2);
+            const parts = num.split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            e.target.value = 'R$ ' + parts.join(',');
+        }
+
+        // 8.11 Exportação do Extrato Financeiro em CSV
+        function exportarExtratoFinanceiroCSV() {
+            if (!APP_DATA.transacoes || APP_DATA.transacoes.length === 0) {
+                showToast('Nenhuma transação registrada para exportar.', 'info');
+                return;
+            }
+
+            let csv = 'Data;Descricao;Tipo;Valor\n';
+            APP_DATA.transacoes.forEach(t => {
+                const dt = formatarDataHoraTransacao(t.data);
+                const desc = (t.descricao || '').replace(/;/g, ',');
+                const tipo = t.tipo || 'entrada';
+                const val = parseFloat(t.valor) || 0;
+                csv += `${dt};${desc};${tipo};${val.toFixed(2).replace('.', ',')}\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `relatorio-financeiro-apex-${new Date().toISOString().slice(0, 10)}.csv`;
+            a.download = `extrato-financeiro-apex-${new Date().toISOString().slice(0, 10)}.csv`;
             a.click();
             URL.revokeObjectURL(url);
 
-            showToast('Relatório CSV exportado com sucesso!', 'success');
+            showToast('Extrato financeiro exportado com sucesso em CSV!', 'success');
+        }
+
+        // 8.12 Renderizador unificado da View Financeira
+        function renderFinanceView() {
+            atualizarPainelFinanceiro();
+            renderizarHistoricoTransacoes();
+        }
+
+        // 8.13 Controle de abertura/fechamento da barra lateral no Mobile
+        function toggleMobileSidebar(forceState) {
+            const sidebar = document.getElementById('crm-sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (!sidebar) return;
+
+            const isOpen = sidebar.classList.contains('translate-x-0') && !sidebar.classList.contains('-translate-x-full');
+            const targetState = (typeof forceState === 'boolean') ? forceState : !isOpen;
+
+            if (targetState) {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('translate-x-0');
+                if (backdrop) {
+                    backdrop.classList.remove('hidden');
+                    setTimeout(() => {
+                        backdrop.classList.remove('opacity-0');
+                        backdrop.classList.add('opacity-100');
+                    }, 10);
+                }
+            } else {
+                sidebar.classList.remove('translate-x-0');
+                sidebar.classList.add('-translate-x-full');
+                if (backdrop) {
+                    backdrop.classList.remove('opacity-100');
+                    backdrop.classList.add('opacity-0');
+                    setTimeout(() => {
+                        backdrop.classList.add('hidden');
+                    }, 300);
+                }
+            }
         }
 
         // --- 9. NOVO CLIENTE (MARCO ZERO TRAVADO NO DIA 0) ---
@@ -5186,10 +6053,618 @@
             closeAgencySettingsModal();
         }
 
-        // Ação de Logout Simulado
+        // ========================================================
+        // --- 12. SISTEMA DE AUTENTICAÇÃO E GESTÃO DE USUÁRIOS   ---
+        // ========================================================
+
+        // Variável de controle da escuta em tempo real de usuários
+        let unsubscribeUsuarios = null;
+
+        // Atualiza a interface com base no perfil logado
+        function atualizarUiPerfil(username, role) {
+            const isOwner = (role === 'dono');
+
+            // Exibição do botão Gestão de Usuários na Sidebar
+            const navUsers = document.getElementById('nav-users');
+            if (navUsers) {
+                if (isOwner) {
+                    navUsers.classList.remove('hidden');
+                    navUsers.classList.add('flex');
+                } else {
+                    navUsers.classList.add('hidden');
+                    navUsers.classList.remove('flex');
+                }
+            }
+
+            // Exibição do botão Gestão de Usuários no Menu Dropup
+            const dropupUsers = document.getElementById('dropup-users-btn');
+            if (dropupUsers) {
+                if (isOwner) {
+                    dropupUsers.classList.remove('hidden');
+                    dropupUsers.classList.add('flex');
+                } else {
+                    dropupUsers.classList.add('hidden');
+                    dropupUsers.classList.remove('flex');
+                }
+            }
+
+            // Atualização de nome do usuário logado
+            if (username) {
+                const sidebarUserName = document.getElementById('sidebar-user-name');
+                if (sidebarUserName) sidebarUserName.innerText = username;
+                const dropupUserName = document.getElementById('dropup-user-name');
+                if (dropupUserName) dropupUserName.innerText = username;
+            }
+
+            // Atualização do cargo/perfil visual
+            const sidebarUserRole = document.getElementById('sidebar-user-role');
+            if (sidebarUserRole) {
+                if (isOwner) {
+                    sidebarUserRole.innerText = 'Dono da Agência';
+                } else if (role === 'vendedor') {
+                    sidebarUserRole.innerText = 'Vendedor / Comercial';
+                } else if (role === 'atendente') {
+                    sidebarUserRole.innerText = 'Atendente / Suporte';
+                } else {
+                    sidebarUserRole.innerText = role ? role.toUpperCase() : 'Colaborador';
+                }
+            }
+        }
+
+        // Validação e envio do login via Firestore (Coleção: 'usuarios' com consulta modular)
+        async function handleLoginSubmit(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            const userField = document.getElementById('login-username');
+            const passField = document.getElementById('login-password');
+            const submitBtn = document.getElementById('login-submit-btn');
+            const errorAlert = document.getElementById('login-error-alert');
+            const errorMsg = document.getElementById('login-error-msg');
+            const loginCard = document.getElementById('login-card-box');
+
+            const username = (userField ? userField.value : '').trim();
+            const password = (passField ? passField.value : '').trim();
+
+            if (!username || !password) {
+                alert("Por favor, preencha o usuário e a senha.");
+                return;
+            }
+
+            // 1. Feedback visual imediato: Muda o texto do botão para 'Carregando...'
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerText = 'Carregando...';
+            }
+
+            try {
+                // 2. Consulta modular ao Firestore usando collection, query, where, getDocs
+                const usuariosRef = collection(db, 'usuarios');
+                const q = query(
+                    usuariosRef,
+                    where('usuario', '==', username),
+                    where('senha', '==', password)
+                );
+
+                let querySnapshot = await getDocs(q);
+
+                // Se a consulta exata não retornou registros, verifica Dono (Murilo Silva com senha 1602)
+                if (querySnapshot.empty && username.toLowerCase() === 'murilo silva' && password === '1602') {
+                    const allUsersSnap = await getDocs(usuariosRef);
+                    let ownerDocId = null;
+
+                    allUsersSnap.forEach(docSnap => {
+                        const data = docSnap.data();
+                        if (data.role === 'dono' || (data.usuario && data.usuario.trim().toLowerCase() === 'murilo silva')) {
+                            ownerDocId = docSnap.id;
+                        }
+                    });
+
+                    if (!ownerDocId) {
+                        // Auto-semeia Murilo Silva no banco
+                        await addDoc(usuariosRef, {
+                            usuario: 'Murilo Silva',
+                            senha: '1602',
+                            role: 'dono',
+                            criadoEm: serverTimestamp()
+                        });
+                    } else {
+                        // Sincroniza senha e perfil do dono
+                        await updateDoc(doc(db, 'usuarios', ownerDocId), {
+                            usuario: 'Murilo Silva',
+                            senha: '1602',
+                            role: 'dono'
+                        });
+                    }
+
+                    // Refaz a consulta com o usuário garantido
+                    querySnapshot = await getDocs(q);
+                }
+
+                // 3. Validação dos resultados da consulta
+                if (!querySnapshot.empty) {
+                    // SUCESSO: Documento localizado no Firestore
+                    const userDoc = querySnapshot.docs[0].data();
+                    const role = userDoc.role || 'atendente';
+                    const nomeUsuario = userDoc.usuario || username;
+
+                    // Manipulação exata do DOM conforme diretrizes
+                    const loginScreen = document.getElementById('login-screen');
+                    const crmRoot = document.getElementById('crm-app-container');
+
+                    if (loginScreen) loginScreen.style.display = 'none';
+                    if (crmRoot) crmRoot.style.display = 'flex';
+
+                    // Persiste credenciais e perfil na sessão
+                    sessionStorage.setItem('apex_crm_auth', 'true');
+                    sessionStorage.setItem('apex_crm_user', nomeUsuario);
+                    sessionStorage.setItem('apex_crm_role', role);
+
+                    // Limpa os campos de formulário e esconde mensagens de erro
+                    if (userField) userField.value = '';
+                    if (passField) passField.value = '';
+                    if (errorAlert) errorAlert.classList.add('hidden');
+
+                    // Atualiza a interface e inicializa o CRM
+                    atualizarUiPerfil(nomeUsuario, role);
+                    initApp();
+                    showToast(`Login realizado com sucesso! Bem-vindo, ${nomeUsuario}.`, 'success');
+                } else {
+                    // FALHA: Nenhum documento bateu com o usuário e a senha
+                    if (userField) userField.value = '';
+                    if (passField) passField.value = '';
+
+                    if (errorAlert) {
+                        errorAlert.classList.remove('hidden');
+                        if (errorMsg) errorMsg.innerText = 'Usuário ou senha incorretos.';
+                    }
+
+                    if (loginCard) {
+                        loginCard.classList.remove('animate-shake');
+                        void loginCard.offsetWidth;
+                        loginCard.classList.add('animate-shake');
+                    }
+
+                    if (userField) userField.focus();
+
+                    // Alerta obrigatório
+                    alert("Usuário ou senha incorretos!");
+                }
+            } catch (error) {
+                console.error("Erro ao conectar com o banco de dados:", error);
+                if (errorAlert) {
+                    errorAlert.classList.remove('hidden');
+                    if (errorMsg) errorMsg.innerText = "Erro ao conectar com o banco de dados: " + (error.message || 'Verifique sua conexão.');
+                }
+                // Alerta obrigatório para falha de conexão/configuração
+                alert("Erro ao conectar com o banco de dados: " + (error.message || 'Erro desconhecido'));
+            } finally {
+                // Restaura o texto original do botão após a consulta
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span>Entrar no CRM</span><i class="ph-bold ph-arrow-right text-base"></i>';
+                }
+            }
+        }
+
+        // Exposição global imediata e vinculação de eventos DOM
+        window._handleLoginSubmitModular = handleLoginSubmit;
+        window.handleLoginSubmit = handleLoginSubmit;
+
+        function bindLoginDomEvents() {
+            const btn = document.getElementById('login-submit-btn');
+            if (btn) btn.onclick = handleLoginSubmit;
+            const form = document.getElementById('login-form');
+            if (form) {
+                form.onsubmit = function(e) {
+                    if (e) e.preventDefault();
+                    return handleLoginSubmit(e);
+                };
+            }
+        }
+        bindLoginDomEvents();
+        document.addEventListener('DOMContentLoaded', bindLoginDomEvents);
+
+        // Alternar visibilidade da senha na tela de login
+        function togglePasswordVisibility() {
+            const passInput = document.getElementById('login-password');
+            const eyeIcon = document.getElementById('login-pwd-eye');
+            if (!passInput) return;
+
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+                if (eyeIcon) {
+                    eyeIcon.classList.remove('ph-eye');
+                    eyeIcon.classList.add('ph-eye-slash');
+                }
+            } else {
+                passInput.type = 'password';
+                if (eyeIcon) {
+                    eyeIcon.classList.remove('ph-eye-slash');
+                    eyeIcon.classList.add('ph-eye');
+                }
+            }
+        }
+
+        // Alternar visibilidade da senha no formulário de novo usuário
+        function toggleNewUserPasswordVisibility() {
+            const passInput = document.getElementById('user-new-password');
+            const eyeIcon = document.getElementById('user-new-pwd-eye');
+            if (!passInput) return;
+
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+                if (eyeIcon) {
+                    eyeIcon.classList.remove('ph-eye');
+                    eyeIcon.classList.add('ph-eye-slash');
+                }
+            } else {
+                passInput.type = 'password';
+                if (eyeIcon) {
+                    eyeIcon.classList.remove('ph-eye-slash');
+                    eyeIcon.classList.add('ph-eye');
+                }
+            }
+        }
+
+        // Alternar visualização da senha na tabela de usuários
+        function toggleTbodyPassword(spanId, eyeId, actualPassword) {
+            const span = document.getElementById(spanId);
+            const eye = document.getElementById(eyeId);
+            if (!span) return;
+
+            if (span.innerText === '••••••••') {
+                span.innerText = actualPassword;
+                if (eye) {
+                    eye.classList.remove('ph-eye');
+                    eye.classList.add('ph-eye-slash');
+                }
+            } else {
+                span.innerText = '••••••••';
+                if (eye) {
+                    eye.classList.remove('ph-eye-slash');
+                    eye.classList.add('ph-eye');
+                }
+            }
+        }
+
+        // Verificação de autenticação ao carregar a página
+        function checkAuthAndInit() {
+            const isAuth = sessionStorage.getItem('apex_crm_auth') === 'true';
+            const currentUser = sessionStorage.getItem('apex_crm_user') || 'Murilo Silva';
+            const currentRole = sessionStorage.getItem('apex_crm_role') || 'dono';
+
+            const loginScreen = document.getElementById('login-screen');
+            const crmRoot = document.getElementById('crm-app-container');
+
+            if (isAuth) {
+                if (loginScreen) loginScreen.style.display = 'none';
+                if (crmRoot) crmRoot.style.display = 'flex';
+
+                atualizarUiPerfil(currentUser, currentRole);
+                initApp();
+            } else {
+                if (loginScreen) loginScreen.style.display = 'flex';
+                if (crmRoot) crmRoot.style.display = 'none';
+            }
+        }
+
+        // Ação de Logout com retorno seguro à tela de login
         function handleLogout() {
             closeUserDropup();
-            showToast('Sessão encerrada com sucesso! Até logo, Murilo.', 'info');
+
+            if (unsubscribeUsuarios) {
+                unsubscribeUsuarios();
+                unsubscribeUsuarios = null;
+            }
+
+            sessionStorage.removeItem('apex_crm_auth');
+            sessionStorage.removeItem('apex_crm_user');
+            sessionStorage.removeItem('apex_crm_role');
+
+            const crmRoot = document.getElementById('crm-app-container');
+            const loginScreen = document.getElementById('login-screen');
+
+            // Oculta abas restritas
+            const navUsers = document.getElementById('nav-users');
+            if (navUsers) navUsers.classList.add('hidden');
+            const dropupUsers = document.getElementById('dropup-users-btn');
+            if (dropupUsers) dropupUsers.classList.add('hidden');
+
+            if (crmRoot) crmRoot.style.display = 'none';
+            if (loginScreen) {
+                loginScreen.style.display = 'flex';
+                const passField = document.getElementById('login-password');
+                if (passField) passField.value = '';
+                const userField = document.getElementById('login-username');
+                if (userField) userField.value = '';
+                const errorAlert = document.getElementById('login-error-alert');
+                if (errorAlert) errorAlert.classList.add('hidden');
+            }
+
+            showToast('Sessão encerrada com sucesso.', 'info');
+        }
+
+        // --- GESTÃO DE USUÁRIOS: CONEXÃO FIRESTORE EM TEMPO REAL ---
+        function initUsuariosRealtime() {
+            if (unsubscribeUsuarios) {
+                unsubscribeUsuarios();
+            }
+
+            const usuariosCol = collection(db, 'usuarios');
+            unsubscribeUsuarios = onSnapshot(usuariosCol, (snapshot) => {
+                const usersList = [];
+                let hasOwner = false;
+
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    usersList.push({ id: docSnap.id, ...data });
+                    if (data.role === 'dono' || (data.usuario && data.usuario.trim().toLowerCase() === 'murilo silva')) {
+                        hasOwner = true;
+                    }
+                });
+
+                // Auto-semeia Murilo Silva se a coleção estiver vazia
+                if (!hasOwner) {
+                    addDoc(usuariosCol, {
+                        usuario: 'Murilo Silva',
+                        senha: '1602',
+                        role: 'dono',
+                        criadoEm: serverTimestamp()
+                    }).catch(console.error);
+                }
+
+                APP_DATA.usuarios = usersList;
+                renderUsuariosTable(usersList);
+            }, (error) => {
+                console.error('Erro na escuta de usuários:', error);
+            });
+        }
+
+        // Renderiza a lista reativa de usuários e atualiza os contadores
+        function renderUsuariosTable(usersList) {
+            const tbody = document.getElementById('users-tbody');
+            if (!tbody) return;
+
+            const totalCountEl = document.getElementById('stat-total-users');
+            const donoCountEl = document.getElementById('stat-dono-users');
+            const equipeCountEl = document.getElementById('stat-equipe-users');
+
+            const donos = usersList.filter(u => u.role === 'dono');
+            const equipe = usersList.filter(u => u.role !== 'dono');
+
+            if (totalCountEl) totalCountEl.innerText = usersList.length;
+            if (donoCountEl) donoCountEl.innerText = donos.length;
+            if (equipeCountEl) equipeCountEl.innerText = equipe.length;
+
+            if (!usersList || usersList.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="py-8 text-center text-slate-500 text-xs">
+                            Nenhum usuário cadastrado no sistema.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // Ordena Donos primeiro, seguido por ordem alfabética
+            const sorted = [...usersList].sort((a, b) => {
+                if (a.role === 'dono' && b.role !== 'dono') return -1;
+                if (a.role !== 'dono' && b.role === 'dono') return 1;
+                return (a.usuario || '').localeCompare(b.usuario || '');
+            });
+
+            tbody.innerHTML = sorted.map((u, index) => {
+                const isDono = (u.role === 'dono');
+
+                // Badge de permissão
+                let roleBadge = '';
+                if (isDono) {
+                    roleBadge = `
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                            <i class="ph-fill ph-crown text-amber-400 text-sm"></i>
+                            <span>Dono da Agência</span>
+                        </span>
+                    `;
+                } else if (u.role === 'vendedor') {
+                    roleBadge = `
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                            <i class="ph-bold ph-trend-up text-sm"></i>
+                            <span>Vendedor</span>
+                        </span>
+                    `;
+                } else {
+                    roleBadge = `
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            <i class="ph-bold ph-headset text-sm"></i>
+                            <span>Atendente</span>
+                        </span>
+                    `;
+                }
+
+                // Formatação da data de criação
+                let dataFormatada = 'Recente';
+                if (u.criadoEm) {
+                    try {
+                        const dateObj = u.criadoEm.toDate ? u.criadoEm.toDate() : new Date(u.criadoEm);
+                        dataFormatada = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    } catch (e) {
+                        dataFormatada = 'Recente';
+                    }
+                }
+
+                // Iniciais para o avatar
+                const initials = (u.usuario || 'U')
+                    .split(' ')
+                    .map(n => n[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase();
+
+                const avatarBg = isDono
+                    ? 'bg-gradient-to-tr from-purple-600 to-indigo-500 text-white shadow-glow-purple'
+                    : (u.role === 'vendedor' ? 'bg-blue-600 text-white' : 'bg-emerald-600 text-white');
+
+                // Ação: Dono é estritamente protegido; secundários possuem exclusão
+                const actionHtml = isDono ? `
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-purple-300 bg-purple-900/30 rounded-lg border border-purple-500/30 cursor-not-allowed select-none" title="O Dono do sistema é protegido e não pode ser excluído">
+                        <i class="ph-bold ph-shield-check text-xs text-amber-400"></i>
+                        <span>Protegido</span>
+                    </span>
+                ` : `
+                    <button type="button" onclick="handleExcluirUsuario('${u.id}', '${(u.usuario || '').replace(/'/g, "\\'")}', '${u.role || ''}')"
+                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/25 text-red-400 hover:text-red-300 border border-red-500/20 text-xs font-medium transition-all active:scale-95 cursor-pointer"
+                        title="Excluir usuário ${u.usuario}">
+                        <i class="ph-bold ph-trash"></i>
+                        <span>Excluir</span>
+                    </button>
+                `;
+
+                const pwdSpanId = `user-pwd-text-${index}`;
+                const pwdEyeId = `user-pwd-eye-${index}`;
+
+                return `
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg ${avatarBg} flex items-center justify-center text-xs font-bold shrink-0">
+                                    ${initials}
+                                </div>
+                                <div>
+                                    <p class="font-bold text-white text-sm">${u.usuario || 'Sem nome'}</p>
+                                    <p class="text-[10px] text-slate-400">${isDono ? 'Acesso administrativo irrestrito' : 'Acesso operacional'}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            ${roleBadge}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-800/80 border border-white/5">
+                                <span id="${pwdSpanId}" class="font-mono text-xs text-slate-300 tracking-wider">••••••••</span>
+                                <button type="button" onclick="toggleTbodyPassword('${pwdSpanId}', '${pwdEyeId}', '${(u.senha || '').replace(/'/g, "\\'")}')"
+                                    class="text-slate-400 hover:text-white transition-colors cursor-pointer" title="Revelar/Ocultar Senha">
+                                    <i id="${pwdEyeId}" class="ph-bold ph-eye text-xs"></i>
+                                </button>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4 text-xs text-slate-400">
+                            ${dataFormatada}
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            ${actionHtml}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Cadastro de novo usuário via formulário
+        async function handleCriarUsuario(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            const currentRole = sessionStorage.getItem('apex_crm_role');
+            if (currentRole !== 'dono') {
+                alert('Acesso negado: Apenas o Dono pode cadastrar novos usuários.');
+                return;
+            }
+
+            const nameInput = document.getElementById('user-new-name');
+            const passInput = document.getElementById('user-new-password');
+            const roleSelect = document.getElementById('user-new-role');
+            const submitBtn = document.getElementById('btn-create-user');
+
+            const usuario = (nameInput ? nameInput.value : '').trim();
+            const senha = (passInput ? passInput.value : '').trim();
+            const role = (roleSelect ? roleSelect.value : 'atendente').trim();
+
+            if (!usuario || !senha) {
+                alert('Preencha o nome do usuário e a senha.');
+                return;
+            }
+
+            if (senha.length < 3) {
+                alert('A senha deve ter pelo menos 3 caracteres.');
+                return;
+            }
+
+            const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="ph-bold ph-spinner animate-spin text-base"></i><span>Cadastrando...</span>';
+            }
+
+            try {
+                // Valida se o nome de usuário já existe na coleção
+                const usuariosCol = collection(db, 'usuarios');
+                const snapshot = await getDocs(usuariosCol);
+                let exists = false;
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (data.usuario && data.usuario.trim().toLowerCase() === usuario.toLowerCase()) {
+                        exists = true;
+                    }
+                });
+
+                if (exists) {
+                    alert(`Já existe um usuário com o nome "${usuario}". Escolha outro nome.`);
+                    return;
+                }
+
+                // Cria o documento no Firestore
+                await addDoc(usuariosCol, {
+                    usuario,
+                    senha,
+                    role,
+                    criadoEm: serverTimestamp()
+                });
+
+                // Limpa os campos
+                if (nameInput) nameInput.value = '';
+                if (passInput) passInput.value = '';
+                if (roleSelect) roleSelect.value = 'atendente';
+
+                showToast(`Usuário "${usuario}" (${role}) cadastrado com sucesso!`, 'success');
+            } catch (err) {
+                console.error('Erro ao cadastrar usuário:', err);
+                alert('Erro ao cadastrar usuário no Firestore: ' + err.message);
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                }
+            }
+        }
+
+        // Exclusão de usuário secundário (Dono protegido contra exclusão)
+        async function handleExcluirUsuario(userId, userName, userRole) {
+            const currentRole = sessionStorage.getItem('apex_crm_role');
+            if (currentRole !== 'dono') {
+                alert('Acesso negado: Apenas o Dono pode excluir usuários.');
+                return;
+            }
+
+            if (userRole === 'dono' || (userName && userName.toLowerCase() === 'murilo silva')) {
+                alert('Ação bloqueada: Não é permitido excluir o usuário Dono do sistema.');
+                return;
+            }
+
+            const confirmar = confirm(`Tem certeza que deseja excluir o usuário "${userName}"? Esta ação revogará o acesso desta pessoa imediatamente.`);
+            if (!confirmar) return;
+
+            try {
+                await deleteDoc(doc(db, 'usuarios', userId));
+                showToast(`Usuário "${userName}" excluído com sucesso.`, 'success');
+            } catch (err) {
+                console.error('Erro ao excluir usuário:', err);
+                alert('Erro ao excluir usuário: ' + err.message);
+            }
         }
 
         function setupKeyboardShortcuts() {
@@ -5205,20 +6680,40 @@
                     closeAddSaleModal();
                     closeAgencySettingsModal();
                     closeUserDropup();
+                    toggleMobileSidebar(false);
                 }
             });
         }
 
         // ========================================================
-        // EXPOSIÃ‡ÃƒO GLOBAL (WINDOW) PARA INTEROPERABILIDADE COM HTML
+        // EXPOSIÇÃO GLOBAL (WINDOW) PARA INTEROPERABILIDADE COM HTML
         // ========================================================
-        // Como o script agora Ã© type="module", funÃ§Ãµes declaradas no mÃ³dulo nÃ£o
-        // sÃ£o anexadas automaticamente ao window. Expondo-as explicitamente aqui,
-        // todos os botÃµes e formulÃ¡rios do HTML (onclick, onsubmit, onchange)
-        // funcionam de forma instantÃ¢nea sem necessidade de refatorar as tags HTML.
         Object.assign(window, {
             db,
             APP_DATA,
+            checkAuthAndInit,
+            handleLoginSubmit,
+            togglePasswordVisibility,
+            toggleNewUserPasswordVisibility,
+            toggleTbodyPassword,
+            handleCriarUsuario,
+            handleExcluirUsuario,
+            initUsuariosRealtime,
+            renderUsuariosTable,
+            atualizarUiPerfil,
+            toggleMobileSidebar,
+            initTransactionsRealtime,
+            atualizarPainelFinanceiro,
+            renderizarHistoricoTransacoes,
+            salvarTransacao,
+            excluirTransacao,
+            setTransacaoTipo,
+            preencherSugestaoTransacao,
+            filtrarTransacoes,
+            handleBuscaTransacao,
+            formatarInputMoeda,
+            exportarExtratoFinanceiroCSV,
+            formatarDataHoraTransacao,
             switchView,
             renderDashboard,
             renderClientsTable,
@@ -5265,7 +6760,7 @@
             toggleTimeLapsePlay,
             setTimeLapseDay,
             handleTimeLapseInput,
-            exportFinanceCSV,
+            exportFinanceCSV: exportarExtratoFinanceiroCSV,
             openAgencySettingsModal,
             closeAgencySettingsModal,
             switchAgencyTab,
@@ -5282,11 +6777,11 @@
             showToast
         });
 
-        // Inicialização do CRM após expor todas as funções globais e definir todas as constantes
+        // Inicialização do CRM com validação de login
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initApp);
+            document.addEventListener('DOMContentLoaded', checkAuthAndInit);
         } else {
-            initApp();
+            checkAuthAndInit();
         }
     </script>
 </body>
