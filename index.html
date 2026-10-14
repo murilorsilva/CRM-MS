@@ -25,7 +25,7 @@
     <!-- Tailwind CSS CDN with Custom Configuration -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // Interceptor preventivo global para garantir resposta imediata no login
+        // Interceptor preventivo global para garantir resposta imediata no login e modais
         window.handleLoginSubmit = function(event) {
             if (event) {
                 event.preventDefault();
@@ -44,6 +44,50 @@
             if (passInput) {
                 passInput.type = (passInput.type === 'password') ? 'text' : 'password';
             }
+        };
+        window.handleNcStatusChange = function() {
+            if (typeof window._handleNcStatusChangeModular === 'function') {
+                return window._handleNcStatusChangeModular();
+            }
+            const statusSelect = document.getElementById('nc-status');
+            const saleFields = document.getElementById('nc-sale-fields');
+            const productInput = document.getElementById('nc-product');
+            const valueInput = document.getElementById('nc-sale-value');
+            if (statusSelect && saleFields) {
+                if (statusSelect.value === 'Venda Fechada') {
+                    saleFields.classList.remove('hidden');
+                    if (productInput) productInput.required = true;
+                    if (valueInput) valueInput.required = true;
+                } else {
+                    saleFields.classList.add('hidden');
+                    if (productInput) { productInput.required = false; productInput.value = ''; }
+                    if (valueInput) { valueInput.required = false; valueInput.value = ''; }
+                }
+            }
+        };
+        window.handleCreateClient = function(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            if (typeof window._handleCreateClientModular === 'function') {
+                return window._handleCreateClientModular(event);
+            }
+            console.warn("Aguardando carregamento da conexão Firebase para salvar cliente...");
+        };
+        window.openNewClientModal = function() {
+            if (typeof window._openNewClientModalModular === 'function') {
+                return window._openNewClientModalModular();
+            }
+            const modal = document.getElementById('new-client-modal');
+            if (modal) modal.classList.remove('hidden');
+        };
+        window.closeNewClientModal = function() {
+            if (typeof window._closeNewClientModalModular === 'function') {
+                return window._closeNewClientModalModular();
+            }
+            const modal = document.getElementById('new-client-modal');
+            if (modal) modal.classList.add('hidden');
         };
     </script>
     <script>
@@ -933,6 +977,7 @@
                             class="glass-input px-3.5 py-2.5 rounded-xl text-sm text-slate-200 outline-none">
                             <option value="all">Status: Todos</option>
                             <option value="Ativo">Apenas Ativos</option>
+                            <option value="Lead">Leads / Prospecção</option>
                             <option value="Inativo">Inativos</option>
                         </select>
                     </div>
@@ -2822,12 +2867,58 @@
                         </div>
                     </div>
 
-                    <!-- SEÇÃO 2: DADOS DO MARCO ZERO (TRAVADOS NO DIA 0) -->
+                    <!-- SEÇÃO 2: STATUS DA NEGOCIAÇÃO & VENDA -->
+                    <div class="p-4 rounded-2xl bg-slate-800/40 border border-white/10 space-y-3.5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <i class="ph-bold ph-handshake text-emeraldAccent text-sm"></i>
+                                <span class="text-xs font-bold text-slate-200 uppercase tracking-wider">2. Status da Negociação</span>
+                            </div>
+                            <span class="text-[10px] text-slate-400">Fluxo Financeiro</span>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Status da Negociação</label>
+                            <select id="nc-status" onchange="handleNcStatusChange()"
+                                class="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs sm:text-sm text-white outline-none">
+                                <option value="Prospecção / Lead" selected>Prospecção / Lead</option>
+                                <option value="Venda Fechada">Venda Fechada</option>
+                            </select>
+                        </div>
+
+                        <!-- Campos Condicionais: Exibidos somente se 'Venda Fechada' -->
+                        <div id="nc-sale-fields" class="hidden space-y-3 pt-3 border-t border-white/10">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Produto / Serviço</label>
+                                    <div class="relative">
+                                        <input id="nc-product" type="text" placeholder="Ex: Combo Gestão + Placa"
+                                            class="w-full pl-9 pr-3.5 py-2.5 rounded-xl glass-input text-xs sm:text-sm text-white placeholder-slate-500 outline-none">
+                                        <i class="ph-bold ph-tag absolute left-3 top-1/2 -translate-y-1/2 text-emeraldAccent text-sm"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Valor da Venda (R$)</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-emerald-400 text-xs font-bold font-mono">R$</span>
+                                        <input id="nc-sale-value" type="number" step="any" min="0" placeholder="0.00"
+                                            class="w-full pl-10 pr-3.5 py-2.5 rounded-xl glass-input text-xs sm:text-sm text-white font-mono placeholder-slate-500 outline-none">
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-[11px] text-emerald-400/90 flex items-center gap-1.5 pt-1">
+                                <i class="ph-bold ph-check-circle text-xs shrink-0"></i>
+                                <span>Ao salvar, esta venda gerará uma entrada automática no Fluxo de Caixa.</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- SEÇÃO 3: DADOS DO MARCO ZERO (TRAVADOS NO DIA 0) -->
                     <div class="p-4 rounded-2xl bg-slate-800/40 border border-amber-500/20 space-y-3.5">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <i class="ph-bold ph-lock-key text-amber-400 text-sm"></i>
-                                <span class="text-xs font-bold text-amber-300 uppercase tracking-wider">2. Dados do Marco
+                                <span class="text-xs font-bold text-amber-300 uppercase tracking-wider">3. Dados do Marco
                                     Zero (Dia 0)</span>
                             </div>
                             <span class="text-[10px] text-slate-400">Linha de base travada</span>
@@ -2857,7 +2948,7 @@
                         </div>
                     </div>
 
-                    <!-- SEÇÃO 3: ÁREA DE UPLOAD EXCLUSIVA PARA O PRINT DO MARCO ZERO (DIA 0) -->
+                    <!-- SEÇÃO 4: ÁREA DE UPLOAD EXCLUSIVA PARA O PRINT DO MARCO ZERO (DIA 0) -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
                             <span class="flex items-center gap-1.5">
@@ -2912,7 +3003,7 @@
                         class="px-4 py-2.5 text-xs font-semibold rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
                         Cancelar
                     </button>
-                    <button type="submit"
+                    <button type="submit" id="btn-save-new-client"
                         class="px-5 py-2.5 text-xs font-bold rounded-xl bg-gradient-to-r from-googleBlue to-blue-600 hover:from-blue-600 hover:to-googleBlue text-white shadow-glow-blue transition-all flex items-center gap-2">
                         <i class="ph-bold ph-lock-key text-sm"></i>
                         <span>Salvar e Travar Marco Zero</span>
@@ -3640,24 +3731,24 @@
 
         // --- 2. REGISTRO DE EVENT LISTENERS (OPÇÃO A: COMBINADA COM OPÇÃO B) ---
         function setupEventListeners() {
-            // Formulários principais do CRUD
+            // Formulários principais do CRUD (vinculação limpa sem duplicações)
             const newClientForm = document.getElementById('new-client-form');
-            if (newClientForm) newClientForm.addEventListener('submit', handleCreateClient);
+            if (newClientForm) newClientForm.onsubmit = handleCreateClient;
 
             const auditForm = document.getElementById('audit-form');
-            if (auditForm) auditForm.addEventListener('submit', handleSaveAudit);
+            if (auditForm) auditForm.onsubmit = handleSaveAudit;
 
             const saleForm = document.getElementById('add-sale-form');
-            if (saleForm) saleForm.addEventListener('submit', handleAddSale);
+            if (saleForm) saleForm.onsubmit = handleAddSale;
 
             const profileForm = document.getElementById('form-agency-profile');
-            if (profileForm) profileForm.addEventListener('submit', saveAgencyProfile);
+            if (profileForm) profileForm.onsubmit = saveAgencyProfile;
 
             const pricingForm = document.getElementById('form-agency-pricing');
-            if (pricingForm) pricingForm.addEventListener('submit', saveAgencyPricing);
+            if (pricingForm) pricingForm.onsubmit = saveAgencyPricing;
 
             const scriptsForm = document.getElementById('form-agency-scripts');
-            if (scriptsForm) scriptsForm.addEventListener('submit', saveAgencyScripts);
+            if (scriptsForm) scriptsForm.onsubmit = saveAgencyScripts;
         }
 
         // --- 3. INITIALIZATION (SEM BACKUPS ANTIGOS / 100% LIMPO) ---
@@ -4021,7 +4112,9 @@
                     client.city.toLowerCase().includes(currentSearchTerm.toLowerCase());
 
                 const matchesNiche = (currentNicheFilter === 'all') || (client.niche === currentNicheFilter);
-                const matchesStatus = (currentStatusFilter === 'all') || (client.status === currentStatusFilter);
+                const matchesStatus = (currentStatusFilter === 'all') || 
+                    (client.status === currentStatusFilter) || 
+                    (currentStatusFilter === 'Lead' && (client.status === 'Lead' || client.status === 'Prospecção / Lead' || client.negotiationStatus === 'Prospecção / Lead'));
 
                 return matchesSearch && matchesNiche && matchesStatus;
             });
@@ -4039,14 +4132,20 @@
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-slate-800/40 transition-colors border-b border-white/5 group';
 
-                const isPositive = client.status === 'Ativo';
-                const statusBadge = isPositive
-                    ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emeraldAccent/10 text-emeraldAccent border border-emeraldAccent/30">
+                let statusBadge = '';
+                if (client.status === 'Ativo') {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emeraldAccent/10 text-emeraldAccent border border-emeraldAccent/30">
                <span class="w-1.5 h-1.5 rounded-full bg-emeraldAccent animate-pulse"></span> Ativo
-             </span>`
-                    : `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-white/10">
+             </span>`;
+                } else if (client.status === 'Lead' || client.status === 'Prospecção / Lead' || client.negotiationStatus === 'Prospecção / Lead') {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+               <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Lead
+             </span>`;
+                } else {
+                    statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-white/10">
                Pausado
              </span>`;
+                }
 
                 // Calculate reviews growth delta
                 const deltaReviews = client.metrics.reviewsNow - client.metrics.reviewsDay0;
@@ -4256,6 +4355,9 @@
             if (client.status === 'Ativo') {
                 statusSpan.className = 'px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emeraldAccent/10 text-emeraldAccent border border-emeraldAccent/30 flex items-center gap-1';
                 statusSpan.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emeraldAccent animate-pulse"></span> Ativo';
+            } else if (client.status === 'Lead' || client.status === 'Prospecção / Lead' || client.negotiationStatus === 'Prospecção / Lead') {
+                statusSpan.className = 'px-2.5 py-0.5 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1';
+                statusSpan.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Lead / Prospecção';
             } else {
                 statusSpan.className = 'px-2.5 py-0.5 text-xs font-semibold rounded-full bg-slate-800 text-slate-400 border border-white/10 flex items-center gap-1';
                 statusSpan.innerHTML = 'Pausado';
@@ -4928,10 +5030,10 @@
 
             navigator.clipboard.writeText(text).then(() => {
                 const btnText = document.getElementById('copy-btn-text');
-                btnText.innerText = 'Copiado!';
+                if (btnText) btnText.innerText = 'Copiado!';
                 showToast('Resumo copiado para a área de transferência!', 'success');
                 setTimeout(() => {
-                    btnText.innerText = 'Copiar Resumo';
+                    if (btnText) btnText.innerText = 'Copiar Resumo';
                 }, 2000);
             });
         }
@@ -4954,9 +5056,10 @@
                 unsubscribeTransacoes = onSnapshot(transCol, (snapshot) => {
                     const transList = [];
                     snapshot.forEach((docSnap) => {
+                        const data = docSnap.data({ serverTimestamps: 'estimate' });
                         transList.push({
                             id: docSnap.id,
-                            ...docSnap.data()
+                            ...data
                         });
                     });
 
@@ -4981,7 +5084,7 @@
 
         // Helper seguro para converter Timestamp do Firestore em milissegundos
         function getTimestampMs(rawDate) {
-            if (!rawDate) return 0;
+            if (!rawDate) return Date.now();
             if (rawDate.toMillis && typeof rawDate.toMillis === 'function') {
                 return rawDate.toMillis();
             }
@@ -4992,7 +5095,7 @@
                 return rawDate.getTime();
             }
             const parsed = Date.parse(rawDate);
-            return isNaN(parsed) ? 0 : parsed;
+            return isNaN(parsed) ? Date.now() : parsed;
         }
 
         // 8.2 Cálculo dinâmico e reativo dos 3 cards de destaque
@@ -5000,12 +5103,14 @@
             let totalEntradas = 0;
             let totalSaidas = 0;
 
-            transacoes.forEach(t => {
+            const list = Array.isArray(transacoes) ? transacoes : (APP_DATA.transacoes || []);
+
+            list.forEach(t => {
                 const val = parseFloat(t.valor) || 0;
-                const tipo = (t.tipo || '').toLowerCase().trim();
-                if (tipo === 'entrada') {
+                const tipo = String(t.tipo || '').toLowerCase().trim();
+                if (tipo === 'entrada' || tipo === 'receita' || tipo === 'venda') {
                     totalEntradas += val;
-                } else if (tipo === 'saida' || tipo === 'saída') {
+                } else if (tipo === 'saida' || tipo === 'saída' || tipo === 'despesa') {
                     totalSaidas += val;
                 }
             });
@@ -5050,7 +5155,7 @@
             // Atualiza também o contador de lançamentos
             const elCount = document.getElementById('fin-transacoes-count');
             if (elCount) {
-                elCount.innerText = `${transacoes.length} lançamento${transacoes.length !== 1 ? 's' : ''}`;
+                elCount.innerText = `${list.length} lançamento${list.length !== 1 ? 's' : ''}`;
             }
         }
 
@@ -5144,7 +5249,10 @@
 
         // Helper de formatação de data/hora para padrão brasileiro
         function formatarDataHoraTransacao(raw) {
-            if (!raw) return new Date().toLocaleDateString('pt-BR');
+            if (!raw) {
+                const d = new Date();
+                return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            }
             if (raw.toDate && typeof raw.toDate === 'function') {
                 const d = raw.toDate();
                 return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -5398,6 +5506,19 @@
             const form = document.getElementById('new-client-form');
             if (form) form.reset();
             resetNcDay0Upload();
+
+            const statusSelect = document.getElementById('nc-status');
+            if (statusSelect) {
+                statusSelect.value = 'Prospecção / Lead';
+            }
+            handleNcStatusChange();
+
+            const btnSubmit = document.getElementById('btn-save-new-client');
+            if (btnSubmit) {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = `<i class="ph-bold ph-lock-key text-sm"></i><span>Salvar e Travar Marco Zero</span>`;
+            }
+
             const modal = document.getElementById('new-client-modal');
             if (modal) {
                 modal.classList.remove('hidden');
@@ -5408,6 +5529,32 @@
 
         function closeNewClientModal() {
             document.getElementById('new-client-modal').classList.add('hidden');
+        }
+
+        function handleNcStatusChange() {
+            const statusSelect = document.getElementById('nc-status');
+            const saleFields = document.getElementById('nc-sale-fields');
+            const productInput = document.getElementById('nc-product');
+            const valueInput = document.getElementById('nc-sale-value');
+
+            if (!statusSelect || !saleFields) return;
+
+            const isVendaFechada = (statusSelect.value === 'Venda Fechada');
+            if (isVendaFechada) {
+                saleFields.classList.remove('hidden');
+                if (productInput) productInput.required = true;
+                if (valueInput) valueInput.required = true;
+            } else {
+                saleFields.classList.add('hidden');
+                if (productInput) {
+                    productInput.required = false;
+                    productInput.value = '';
+                }
+                if (valueInput) {
+                    valueInput.required = false;
+                    valueInput.value = '';
+                }
+            }
         }
 
         function triggerNcDay0Upload() {
@@ -5462,18 +5609,63 @@
         }
 
         async function handleCreateClient(event) {
-            event.preventDefault();
-            const name = document.getElementById('nc-name').value.trim();
-            const niche = document.getElementById('nc-niche').value;
-            const mapsLink = document.getElementById('nc-maps-link').value.trim();
-            const owner = document.getElementById('nc-owner').value.trim();
-            const phone = document.getElementById('nc-phone').value.trim();
-            const city = document.getElementById('nc-city').value.trim();
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            const btnSubmit = document.getElementById('btn-save-new-client') || 
+                              (event && event.target ? event.target.querySelector('button[type="submit"]') : null) ||
+                              document.querySelector('#new-client-form button[type="submit"]');
+            const originalBtnHtml = btnSubmit ? btnSubmit.innerHTML : '';
+
+            const nameInput = document.getElementById('nc-name');
+            const name = nameInput ? nameInput.value.trim() : '';
+            const niche = document.getElementById('nc-niche') ? document.getElementById('nc-niche').value : 'Geral';
+            const mapsLink = document.getElementById('nc-maps-link') ? document.getElementById('nc-maps-link').value.trim() : '';
+            const owner = document.getElementById('nc-owner') ? document.getElementById('nc-owner').value.trim() : '';
+            const phone = document.getElementById('nc-phone') ? document.getElementById('nc-phone').value.trim() : '';
+            const city = document.getElementById('nc-city') ? document.getElementById('nc-city').value.trim() : '';
+
+            if (!name) {
+                showToast('Por favor, informe o Nome do Negócio.', 'warning');
+                if (nameInput) nameInput.focus();
+                return;
+            }
+
+            // Status da Negociação e Dados Condicionais de Venda
+            const statusSelect = document.getElementById('nc-status');
+            const statusNegociacao = statusSelect ? statusSelect.value : 'Prospecção / Lead';
+            const isVendaFechada = (statusNegociacao === 'Venda Fechada');
+
+            let produtoServico = '';
+            let valorVenda = 0;
+
+            if (isVendaFechada) {
+                const prodInput = document.getElementById('nc-product');
+                const valInput = document.getElementById('nc-sale-value');
+                produtoServico = prodInput ? prodInput.value.trim() : '';
+
+                let rawVal = valInput ? String(valInput.value).trim().replace('R$', '').replace(/\s/g, '').replace(',', '.') : '0';
+                valorVenda = parseFloat(rawVal) || 0;
+
+                if (!produtoServico) {
+                    showToast('Por favor, informe o Produto/Serviço da venda fechada.', 'warning');
+                    if (prodInput) prodInput.focus();
+                    return;
+                }
+
+                if (isNaN(valorVenda) || valorVenda <= 0) {
+                    showToast('Por favor, informe um valor numérico válido maior que zero para a venda.', 'warning');
+                    if (valInput) valInput.focus();
+                    return;
+                }
+            }
 
             // Dados do Marco Zero (Travados permanentemente no Dia 0)
-            const rev0 = parseInt(document.getElementById('nc-rev0').value) || 0;
-            const rat0 = parseFloat(document.getElementById('nc-rat0').value) || 4.0;
-            const rank0 = parseInt(document.getElementById('nc-rank0').value) || 10;
+            const rev0 = parseInt(document.getElementById('nc-rev0')?.value) || 0;
+            const rat0 = parseFloat(document.getElementById('nc-rat0')?.value) || 4.0;
+            const rank0 = parseInt(document.getElementById('nc-rank0')?.value) || 10;
 
             // Print do Marco Zero (Dia 0)
             const cleanSlug = name.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -5482,7 +5674,7 @@
             const todayDate = new Date().toISOString().slice(0, 10);
             const todayFormatted = new Date().toLocaleDateString('pt-BR');
 
-            // No momento da criação (Dia 0), os dados atuais são travados exatamente iguais ao Marco Zero
+            // Montagem dos dados do cliente (sem valores fixos/hardcoded de R$ 297,00)
             const newClientData = {
                 name: name,
                 owner: owner,
@@ -5496,12 +5688,13 @@
                 lastAuditCycle: null,
                 startDate: todayDate,
                 daysActive: 0,
-                status: 'Ativo',
-                product: 'Combo Gestão + Placa',
-                monthlyFee: 297,
+                status: isVendaFechada ? 'Ativo' : 'Lead',
+                negotiationStatus: statusNegociacao,
+                product: isVendaFechada ? produtoServico : 'Prospecção / Lead',
+                monthlyFee: isVendaFechada ? valorVenda : 0,
                 metrics: {
                     reviewsDay0: rev0,
-                    reviewsNow: rev0,       // Travado: Inicia rigorosamente com os dados do Marco Zero
+                    reviewsNow: rev0,       // Travado: Inicia com os dados do Marco Zero
                     ratingDay0: rat0,
                     ratingNow: rat0,         // Travado
                     rankDay0: rank0,
@@ -5510,23 +5703,80 @@
                         { label: 'Marco Zero (Dia 0)', reviews: rev0, date: todayFormatted }
                     ]
                 },
-                testimonial: "Marco Zero cadastrado. Diagnóstico inicial registrado e aguardando primeira auditoria de 30 dias.",
+                testimonial: isVendaFechada
+                    ? `Venda fechada: ${produtoServico}. Marco Zero cadastrado e aguardando primeira auditoria de 30 dias.`
+                    : "Em prospecção / lead. Diagnóstico inicial registrado e aguardando fechamento.",
                 auditDueCycle: 30,
-                purchases: [
-                    { id: 'p-' + Date.now(), date: todayFormatted, product: 'Combo Gestão + Placa', type: 'Recorrente', method: 'PIX Instantâneo', value: 297.00, status: 'Ativo' }
-                ],
+                purchases: isVendaFechada ? [
+                    {
+                        id: 'p-' + Date.now(),
+                        date: todayFormatted,
+                        product: produtoServico,
+                        type: 'Venda Fechada',
+                        method: 'PIX Instantâneo',
+                        value: valorVenda,
+                        status: 'Ativo'
+                    }
+                ] : [],
                 createdAt: new Date().toISOString()
             };
 
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = `<i class="ph-bold ph-spinner animate-spin text-sm"></i><span>Salvando...</span>`;
+            }
+
             try {
+                // 1. Registra o cliente na coleção 'clientes'
                 const docRef = await addDoc(collection(db, 'clientes'), newClientData);
                 APP_DATA.selectedClientId = docRef.id;
+
+                // 2. Se status for 'Venda Fechada', cria obrigatoriamente um novo documento na coleção 'transacoes'
+                if (isVendaFechada) {
+                    await addDoc(collection(db, 'transacoes'), {
+                        tipo: 'entrada',
+                        valor: valorVenda,
+                        descricao: produtoServico,
+                        data: serverTimestamp()
+                    });
+
+                    // Atualização otimista imediata para feedback instantâneo no painel
+                    const localTx = {
+                        id: 'tx-temp-' + Date.now(),
+                        tipo: 'entrada',
+                        valor: valorVenda,
+                        descricao: produtoServico,
+                        data: new Date()
+                    };
+                    if (!APP_DATA.transacoes.some(t => t.descricao === produtoServico && Math.abs((parseFloat(t.valor) || 0) - valorVenda) < 0.001)) {
+                        APP_DATA.transacoes.unshift(localTx);
+                        atualizarPainelFinanceiro(APP_DATA.transacoes);
+                        renderizarHistoricoTransacoes();
+                    }
+                }
+
                 closeNewClientModal();
-                showToast(`Cliente "${name}" gravado no Firestore com sucesso!`, 'success');
+
+                if (isVendaFechada) {
+                    const formattedSale = valorVenda.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    showToast(`Cliente "${name}" cadastrado e venda de ${formattedSale} integrada ao Financeiro!`, 'success');
+                } else {
+                    showToast(`Lead "${name}" cadastrado na prospecção com sucesso!`, 'success');
+                }
+
+                // Renderiza imediatamente a view financeira
+                renderFinanceView();
+
+                // Abre ficha detalhada do cliente
                 openClientDetail(docRef.id);
             } catch (err) {
-                console.error("Erro ao gravar cliente no Firestore:", err);
+                console.error("Erro ao gravar cliente ou transação no Firestore:", err);
                 showToast("Erro ao gravar no Firestore: " + err.message, "error");
+            } finally {
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = originalBtnHtml;
+                }
             }
         }
 
@@ -6809,12 +7059,17 @@
             updateSaleProductPrice,
             handleAddSale,
             openNewClientModal,
+            _openNewClientModalModular: openNewClientModal,
             closeNewClientModal,
+            _closeNewClientModalModular: closeNewClientModal,
+            handleNcStatusChange,
+            _handleNcStatusChangeModular: handleNcStatusChange,
             triggerNcDay0Upload,
             handleNcDay0Select,
             handleNcDay0Drop,
             removeNcDay0Upload,
             handleCreateClient,
+            _handleCreateClientModular: handleCreateClient,
             salvarCliente: handleCreateClient,
             salvarLead: handleCreateClient,
             carregarClientes,
